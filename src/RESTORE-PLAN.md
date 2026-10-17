@@ -3,8 +3,10 @@
 The initial source baseline came from `friebetill/obsidian-file-diff` tag
 `1.1.2`, commit `d566ded402f72e1508f33b640d6f96d7c32c9a00`. It has since been
 adapted with explicit Obsidian `App` dependencies and a tested TypeScript port
-of the local panel-diff algorithm. It is still not a complete source
-representation of the installed local plugin.
+of the local panel-diff algorithm. The original customized TypeScript project
+was not found. The reconstructed source has now passed the core behavioral
+comparison and isolated desktop checks described below; equivalence in every
+platform, theme and edge case is not claimed.
 
 The installed plugin is locally customized (`manifest.json` version `1.2.2`).
 Keep the current root `main.js` intact until these sources are reconciled with
@@ -19,9 +21,9 @@ Obsidian bundle smoke test. The build is deliberately isolated: it does not
 replace the installed root `main.js`. Passing the mocked smoke test does not
 prove complete feature or visual parity with the installed bundle.
 
-Remaining source-parity work includes a direct comparison of all locally
-customized commands, settings and diff rendering against the installed bundle,
-followed by Obsidian reload/error/visual verification before any install step.
+Core commands, settings and diff rendering have been compared against the
+installed bundle and exercised in independent Obsidian vaults. Installation
+over the real working plugin remains a separate, explicit step.
 
 Recent parity checks now preserve the installed workspace view IDs
 (`bigao-differences-view`, `bigao-panel-view`) and route both comparison flows
@@ -51,3 +53,41 @@ Source tests cover safe range mapping and companion lifecycle.
 
 Do not publish or overwrite the installed bundle from the upstream source
 alone.
+
+## Verification recorded on 2026-10-17
+
+`source-parity.test.mjs` runs both implementations against the same inputs:
+
+- 109 fixed and seeded cases, with Chinese segmentation enabled and disabled:
+  tokenization, word spans, per-line positions and split-diff ranges.
+- Full-diff line mapping and rendered text/span structure, including CRLF,
+  whitespace, repeated lines, accents, emoji, insertions and deletions.
+- All six command IDs/names, both persistent view IDs, all five palettes,
+  invalid-setting fallback, all eight merge actions and sync-conflict matching.
+- Two identical production builds, matching `dist/main.js`, without bundled
+  `@codemirror/*` inputs or changes to the installed baseline.
+
+A clean temporary copy containing only the 49 Git-eligible project files was
+also tested with a fresh `npm ci --offline --ignore-scripts`. All 66 automated
+tests, strict type checks and production build passed without reusing the
+working directory's `node_modules`; the resulting main bundle matches the
+candidate byte for byte.
+
+`scripts/obsidian-smoke.mjs` separately loads the frozen baseline and complete
+source candidate in synthetic vaults under a temporary user-data directory.
+Both passed real picker selection, left/right and top/bottom split geometry,
+bilateral word highlights, live edits, restoration and plugin reload in
+Windows Obsidian 1.14.4. Full-diff text, three hunks and five word spans match;
+cancelling the merge warning neither accepts risk nor opens a merge view.
+The harness checks invalid editor extensions and captured window errors,
+confirms fixture texts and installed runtime hashes are unchanged, and closes
+only its own isolated browser. Reports and visually checked fixture screenshots
+stay in ignored `dist/`; temporary synthetic vaults remain for diagnosis.
+
+`npm run package:candidate` creates `dist/candidate/` with `main.js`,
+`manifest.json`, `styles.css` and SHA-256 file records. Unlike the frozen
+baseline, this source candidate bundles its inline runtime and needs no
+sidecar. No build, package or test command installs over the working plugin.
+
+Mobile, arbitrary themes and complex rendered Markdown remain unverified.
+Destructive merge/delete UI checks must always use disposable notes only.

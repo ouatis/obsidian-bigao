@@ -17,7 +17,11 @@
 !/esbuild.inline-diff.config.mjs
 !/panel-render-limit.test.mjs
 !/source-bundle.test.mjs
+!/source-parity.test.mjs
 !/inline-diff-runtime.test.mjs
+!/scripts/
+/scripts/**
+!/scripts/**/*.mjs
 !/src/
 
 # Keep source, tests, and maintenance notes; not local data or media.

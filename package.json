@@ -11,8 +11,11 @@
     "test:bundle": "node --test panel-render-limit.test.mjs",
     "test:source": "node --experimental-strip-types --test src/data/file_differences.node.test.mjs src/data/inline_decoration_ranges.node.test.mjs src/data/panel_differences.node.test.mjs src/utils/string_utils.node.test.mjs src/utils/word_diff.node.test.mjs",
     "test:source-bundle": "node --test source-bundle.test.mjs inline-diff-runtime.test.mjs",
+    "test:parity": "node --test source-parity.test.mjs",
+    "package:candidate": "npm run build && node scripts/package-candidate.mjs",
+    "test:obsidian": "node scripts/obsidian-smoke.mjs",
     "test": "npm run test:bundle && npm run test:source",
-    "verify": "npm run check && npm run typecheck && npm test && npm run build && npm run test:source-bundle"
+    "verify": "npm run check && npm run typecheck && npm test && npm run build && npm run test:source-bundle && npm run test:parity"
   },
   "engines": {
     "node": ">=22.6"

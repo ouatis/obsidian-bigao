@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 本目录对应 JARDIN vault 中已安装的 `bigao` 插件；manifest 版本为 `1.2.2`。
-- 根目录 `main.js` 仍是当前安装版。`src/` 是按上游 1.1.2 基线恢复并补入本地功能的源码，尚未证明与安装版完全等价。
-- `npm run build` 只生成 `dist/main.js`。在完成下面的源码一致性核对和 Obsidian 实测前，不得把它复制到根目录覆盖安装版。
+- 根目录 `main.js` 仍是冻结的当前安装版。`src/` 以原插件 1.1.2 为基线恢复，已通过本轮核心行为对照及 Obsidian 1.14.4 独立测试库验证；详见 `src/RESTORE-PLAN.md`。这不是全部环境与边界场景等价的承诺。
+- `npm run build` 只生成 `dist/main.js` 等验证产物；`npm run package:candidate` 生成完整的 `dist/candidate/` 源码候选安装包。当前没有自动安装步骤，不得未经验证和明确安装请求覆盖根目录安装版。
 
 ## 验证
 
@@ -12,7 +12,7 @@
 npm run verify
 ```
 
-完整链路包括：已安装 bundle 语法和回归、严格 TypeScript 检查、源码纯逻辑测试、隔离构建、源码 bundle 冒烟。它不安装构建产物，也不能替代 Obsidian 内的 reload、错误检查和界面核验。
+完整链路包括：已安装 bundle 语法和回归、严格 TypeScript 检查、源码纯逻辑测试、隔离构建、源码 bundle 冒烟、同输入的安装版/源码行为对照与可重复构建检查。它不安装构建产物，也不能替代 Obsidian 内的 reload、错误检查和界面核验。`npm run test:obsidian` 使用独立临时资料目录和人工稿件验证两套安装包；须提供 `BIGAO_OBSIDIAN_EXE`、`BIGAO_OBSIDIAN_ASAR`，不能改成复用用户的真实配置目录。
 
 ## 结构
 
@@ -24,6 +24,7 @@ npm run verify
 - `src/components/bigao_panel_render.ts`：全文差异 DOM 渲染和行定位。
 - `src/data/panel_differences.ts`、`src/utils/word_diff.ts`：有界差异算法与中英文分词。
 - `panel-render-limit.test.mjs`：当前安装 bundle 回归；`source-bundle.test.mjs`：隔离源码 bundle 冒烟。
+- `source-parity.test.mjs`：同输入行为与重复构建核对；`scripts/obsidian-smoke.mjs`：独立桌面运行验证；`scripts/package-candidate.mjs`：仅向 `dist/candidate/` 打包，不安装。
 
 ## 必须保留的本地行为
 

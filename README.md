@@ -41,7 +41,25 @@ npm run verify
 
 验证包括当前安装包检查、TypeScript 类型检查、逻辑回归、隔离构建及替身环境中的运行测试。真实 Obsidian 分屏、重载和界面检查仍需单独进行。
 
-**根目录 `main.js` 是当前使用的安装包；`src/` 是恢复中的源码，两者尚未完成全部功能与界面一致性核对。** `npm run build` 只生成 `dist/` 验证产物，不会覆盖安装包。不要直接用 `dist/main.js` 替换根目录版本。
+**根目录 `main.js` 是当前使用的冻结安装包。** `src/` 已通过本轮核心行为对照与 Windows Obsidian 1.14.4 的独立测试库验证，但不代表所有环境和边界情况都已覆盖。`npm run build` 只生成 `dist/` 验证产物，不会覆盖安装包。
+
+## 构建源码候选安装包
+
+```sh
+npm run package:candidate
+```
+
+完整候选包生成到 `dist/candidate/`，包含 `main.js`、`manifest.json`、`styles.css` 和文件校验记录 `build-info.json`。源码版已经把行内高亮模块打包进 `main.js`，因此安装到独立测试库时只需前三个文件，不再需要旧安装包的单独运行文件。此命令不会安装或覆盖现用插件。
+
+如需重复真实桌面检查，先构建候选包，再在 Windows PowerShell 中提供本机的 Obsidian 路径：
+
+```powershell
+$env:BIGAO_OBSIDIAN_EXE = 'C:\path\to\Obsidian.exe'
+$env:BIGAO_OBSIDIAN_ASAR = Join-Path $env:APPDATA 'obsidian\obsidian-1.14.4.asar'
+npm run test:obsidian
+```
+
+请按实际安装版本调整 `.asar` 文件名。脚本仅在临时目录中创建独立资料目录、两个人工测试库和插件副本，结束时关闭测试进程；不读写真实笔记库。原安装包与源码候选包分别验证分屏、双侧高亮、编辑刷新、插件重载、全文差异及取消合并警告；本地报告与截图保存在忽略提交的 `dist/` 中，临时测试库保留供排查。
 
 ## 已知限制
 
