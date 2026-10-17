@@ -1,0 +1,37 @@
+# This repository lives inside an Obsidian plugin folder. Track only reviewed files.
+/*
+!/.gitignore
+!/.gitattributes
+!/AGENTS.md
+!/LICENSE
+!/README.md
+!/README.local.md
+!/manifest.json
+!/styles.css
+!/main.js
+!/inline-diff-runtime-v9.js
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/esbuild.config.mjs
+!/esbuild.inline-diff.config.mjs
+!/panel-render-limit.test.mjs
+!/source-bundle.test.mjs
+!/inline-diff-runtime.test.mjs
+!/src/
+
+# Keep source, tests, and maintenance notes; not local data or media.
+/src/**
+!/src/**/
+!/src/**/*.ts
+!/src/**/*.mjs
+!/src/**/*.md
+
+# Never track editor settings, secrets, logs, dependencies, or local plugin data.
+**/.env
+**/.env.*
+**/node_modules/
+**/data.json
+**/*.log
+**/.DS_Store
+**/Thumbs.db

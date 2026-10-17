@@ -1,0 +1,376 @@
+/* ===== 行内比稿：编辑器内差异染色 =====
+   与并排视图共用 --bigao-* 配色变量，切换配色方案时同步生效。 */
+.bigao-inline-add {
+	background-color: var(--bigao-add-bg);
+	border-radius: 2px;
+	box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--bigao-add-fg) 68%, transparent);
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+.cm-line.bigao-inline-new-line {
+	box-shadow: inset 2px 0 0 color-mix(in srgb, var(--bigao-add-fg) 70%, transparent);
+}
+
+.cm-line.bigao-inline-replaced-line {
+	box-shadow: inset 2px 0 0 color-mix(in srgb, var(--bigao-del-fg) 75%, transparent);
+}
+
+.cm-line.bigao-inline-removed-line {
+	box-shadow: inset 2px 0 0 color-mix(in srgb, var(--bigao-del-fg) 75%, transparent);
+}
+
+.bigao-inline-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 0;
+	height: 0;
+	overflow: visible;
+	pointer-events: none;
+	/* Keep the tint below editor text and its selection layer. */
+	z-index: -3;
+}
+
+.bigao-inline-overlay .bigao-inline-add {
+	background-color: var(--bigao-add-fg);
+	box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--bigao-add-fg) 65%, var(--text-normal, #222));
+}
+
+.bigao-inline-overlay > span {
+	position: absolute;
+	display: block;
+	box-sizing: border-box;
+	pointer-events: none;
+}
+
+.bigao-inline-line-marker {
+	width: 3px;
+	border-radius: 2px;
+}
+
+.bigao-inline-line-marker.bigao-inline-new-line {
+	background: color-mix(in srgb, var(--bigao-add-fg) 75%, var(--text-normal, #222));
+}
+
+.bigao-inline-line-marker.bigao-inline-replaced-line,
+.bigao-inline-line-marker.bigao-inline-removed-line {
+	background: color-mix(in srgb, var(--bigao-del-fg) 75%, var(--text-normal, #222));
+}
+
+/* 行内模式开启时，给被比稿的笔记加一个极轻的提示 */
+.workspace-leaf-content[data-type="markdown"] .bigao-inline-active-note {
+	box-shadow: inset 3px 0 0 0 var(--bigao-add-bg);
+}
+
+.file-diff__container {
+	width: 100%;
+	max-width: 100%;
+	overflow-x: scroll;
+	padding: 1rem;
+}
+
+.file-diff__error {
+	padding: 1rem;
+	color: var(--text-error);
+}
+
+.file-diff__line {
+	padding: 0.1rem 0;
+}
+
+.file-diff__button-container {
+	text-align: right;
+}
+
+/* ===== 比稿 / Collate · 配色方案 ==================================
+   主名：比稿（bǐgǎo）  副名：Collate
+   默认 scriptorium：取 Scriptorium 的暖赭色调，随明暗模式切换。
+   切换（Obsidian 控制台，无需重启）：
+     localStorage.setItem("bigao-palette", "ocean")
+   可选：scriptorium（默认） / classic / mono / ocean / forest
+   ================================================================== */
+
+/* 默认 · Scriptorium。
+   注意：主题变量定义在 .theme-light / .theme-dark 作用域内，
+   因此这里用字面色值兜底，保证任何主题下都能出色。 */
+body,
+body[data-bigao-palette="scriptorium"] {
+	--bigao-del-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #c94c3b 10%);
+	--bigao-del-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #c94c3b 40%);
+	--bigao-add-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #6fa36f 12%);
+	--bigao-add-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #6fa36f 44%);
+}
+
+/* 经典高对比 · 保留原插件的青/蓝，便于对照 */
+body[data-bigao-palette="classic"] {
+	--bigao-del-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #0fc 15%);
+	--bigao-del-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #0fc 50%);
+	--bigao-add-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #08f 15%);
+	--bigao-add-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #08f 50%);
+}
+
+/* 单色墨 · 只用赭墨深浅区分，最克制 */
+body[data-bigao-palette="mono"] {
+	--bigao-del-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #b9b0a2 14%);
+	--bigao-del-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #a89c8c 40%);
+	--bigao-add-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #d8cfbe 22%);
+	--bigao-add-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #c24e18 38%);
+}
+
+/* 靛蓝 · 冷色对比 */
+body[data-bigao-palette="ocean"] {
+	--bigao-del-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #b85450 12%);
+	--bigao-del-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #b85450 44%);
+	--bigao-add-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #3f7fa8 12%);
+	--bigao-add-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #3f7fa8 46%);
+}
+
+/* 苔绿 · 低饱和，接近 Scriptorium 的 secondary */
+body[data-bigao-palette="forest"] {
+	--bigao-del-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #406e40 13%);
+	--bigao-del-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #406e40 42%);
+	--bigao-add-bg: color-mix(in srgb, var(--background-primary, #faf6ee), #c24e18 11%);
+	--bigao-add-fg: color-mix(in srgb, var(--background-primary, #faf6ee), #c24e18 42%);
+}
+
+.file-diff__top-line__bg {
+	background-color: var(--bigao-del-bg);
+	border-radius: 0.25rem; /* 4px */
+}
+
+.file-diff_top-line__character {
+	background-color: var(--bigao-del-fg);
+	border-radius: 0.25rem; /* 4px */
+}
+
+.file-diff__bottom-line__bg {
+	background-color: var(--bigao-add-bg);
+	border-radius: 0.25rem; /* 4px */
+}
+
+.file-diff_bottom-line__character {
+	background-color: var(--bigao-add-fg);
+	border-radius: 0.25rem; /* 4px */
+}
+
+.file-diff__no-bottom-border {
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.file-diff__no-top-border {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.file-diff__action-line {
+	color: var(--text-muted);
+}
+
+/* Tailwind CSS */
+.flex {
+	display: flex;
+}
+
+.flex-row {
+	flex-direction: row;
+}
+
+.gap-1 {
+	gap: 0.25rem; /* 4px */
+}
+
+.no-decoration {
+	text-decoration-line: none;
+}
+
+.no-decoration:hover {
+	text-decoration-line: none;
+}
+
+.text-xxs {
+	font-size: 0.65rem;
+}
+
+/* Rename from py-0.5 to py-0-5, as dots aren't allowed in selector names */
+.py-0-5 {
+	padding-top: 0.125rem; /* 2px */
+	padding-bottom: 0.125rem; /* 2px */
+}
+
+.mr-2 {
+	margin-right: 0.5rem; /* 8px */
+}
+
+.mb-20 {
+	margin-bottom: 5rem; /* 80px */
+}
+
+/* ===== 比稿 · 侧边对照面板 ===== */
+.bigao-panel__empty {
+	color: var(--text-muted);
+	padding: 1rem;
+	font-size: 0.9em;
+	line-height: 1.6;
+}
+
+.bigao-panel__head {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid var(--background-modifier-border);
+	position: sticky;
+	top: 0;
+	background: var(--background-secondary);
+	z-index: 1;
+}
+
+.bigao-panel__count {
+	font-size: 0.85em;
+	color: var(--text-secondary);
+	font-weight: 600;
+}
+
+.bigao-panel__block {
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+}
+
+.bigao-panel__meta {
+	font-size: 0.75em;
+	color: var(--text-faint);
+	margin-bottom: 0.25em;
+}
+
+.bigao-panel__text {
+	font-size: 0.9em;
+	line-height: 1.75;
+	word-break: break-word;
+	color: var(--text-normal);
+}
+
+/* ===== 比稿 · 侧边对照面板（全文 + 跟随光标）===== */
+.bigao-panel__body {
+	font-size: 0.88em;
+	line-height: 1.6;
+}
+
+.bigao-panel__row {
+	display: flex;
+	align-items: flex-start;   /* 行号与首行对齐；换行时行号不漂 */
+	gap: 0.6em;
+	padding: 0.1em 0.6em;
+	margin: 0;
+	border-left: 2px solid transparent;
+}
+
+.bigao-panel__row--diff {
+	background: color-mix(in srgb, var(--bigao-add-bg) 35%, transparent);
+	border-left-color: color-mix(in srgb, var(--bigao-add-fg) 55%, transparent);
+}
+
+.bigao-panel__row--removed {
+	background: color-mix(in srgb, var(--bigao-del-bg) 35%, transparent);
+	border-left-color: color-mix(in srgb, var(--bigao-del-fg) 55%, transparent);
+}
+
+.bigao-panel__gutter {
+	flex: 0 0 2.2em;
+	text-align: right;
+	line-height: inherit;       /* 继承正文行高，与首行基线对齐 */
+	min-height: 1em;
+	color: var(--text-faint);
+	font-size: 0.82em;
+	opacity: 0.55;
+	user-select: none;
+	font-variant-numeric: tabular-nums;
+}
+
+.bigao-panel__text {
+	flex: 1 1 auto;
+	white-space: pre-wrap;
+	word-break: break-word;
+	color: var(--text-normal);
+}
+
+.bigao-panel__blank {
+	display: inline-block;
+	height: 1.2em;
+}
+
+.bigao-panel__add {
+	background-color: var(--bigao-add-bg);
+	color: var(--text-normal);
+	border-radius: 2px;
+	padding: 0.05em 0.15em;
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--bigao-add-fg) 55%, transparent);
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+.bigao-panel__removed {
+	display: inline-block;
+	margin-right: 0.4em;
+	padding: 0 0.25em;
+	border-radius: 2px;
+	background-color: var(--bigao-del-bg);
+	color: var(--bigao-del-fg);
+	font-size: 0.78em;
+}
+
+/* 跟随开关 */
+.bigao-panel__follow {
+	cursor: pointer;
+	font-size: 0.78em;
+	padding: 0.1em 0.6em;
+	border-radius: 10px;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	user-select: none;
+	white-space: nowrap;
+}
+
+.bigao-panel__follow[data-active="1"] {
+	color: var(--text-accent);
+	border-color: var(--text-accent);
+	background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+}
+
+.bigao-panel__follow:hover {
+	color: var(--text-normal);
+}
+
+/* 旧结构保留兼容 */
+.bigao-panel__head {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	padding: 0.5rem 0.75rem;
+	border-bottom: 1px solid var(--background-modifier-border);
+	position: sticky;
+	top: 0;
+	background: var(--background-secondary);
+	z-index: 2;
+}
+
+.bigao-panel__count {
+	font-size: 0.82em;
+	color: var(--text-secondary);
+	font-weight: 600;
+}
+
+.bigao-panel__empty {
+	color: var(--text-muted);
+	padding: 1rem;
+	font-size: 0.9em;
+	line-height: 1.6;
+}
+
+.bigao-pick__dir {
+	font-size: 0.8em;
+	color: var(--text-faint);
+	opacity: 0.7;
+	margin-top: 0.1em;
+}

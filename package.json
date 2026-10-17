@@ -1,0 +1,31 @@
+{
+  "name": "obsidian-bigao-local",
+  "version": "1.2.2",
+  "private": true,
+  "description": "Local verification scripts for the installed Bigao Obsidian plugin.",
+  "scripts": {
+    "check": "node --check main.js",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "build": "npm run typecheck && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "test:bundle": "node --test panel-render-limit.test.mjs",
+    "test:source": "node --experimental-strip-types --test src/data/file_differences.node.test.mjs src/data/inline_decoration_ranges.node.test.mjs src/data/panel_differences.node.test.mjs src/utils/string_utils.node.test.mjs src/utils/word_diff.node.test.mjs",
+    "test:source-bundle": "node --test source-bundle.test.mjs inline-diff-runtime.test.mjs",
+    "test": "npm run test:bundle && npm run test:source",
+    "verify": "npm run check && npm run typecheck && npm test && npm run build && npm run test:source-bundle"
+  },
+  "engines": {
+    "node": ">=22.6"
+  },
+  "devDependencies": {
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.13",
+    "@types/diff": "^5.0.2",
+    "@types/node": "^22.10.2",
+    "diff": "^5.1.0",
+    "esbuild": "^0.24.2",
+    "obsidian": "^1.13.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.2"
+  }
+}

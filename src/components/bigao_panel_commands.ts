@@ -1,0 +1,139 @@
+import { App, MarkdownFileInfo, MarkdownView, Notice, WorkspaceLeaf } from 'obsidian';
+import { BIGAO_PANEL_VIEW } from './bigao_panel_view.ts';
+import { pickCompareFile } from './bigao_compare_file_modal.ts';
+import { clearInlineDiffForLeaves, scheduleInlineDiffRefresh } from './inline_diff.ts';
+
+type SplitDirection = 'horizontal' | 'vertical';
+
+interface SplitComparison {
+	comparePath: string;
+	sourcePath?: string;
+	direction: SplitDirection;
+	sourceLeaf: WorkspaceLeaf;
+}
+
+const splitComparisonWindow = window as Window & {
+	__bigaoSplitComparisonsV1?: Map<WorkspaceLeaf, SplitComparison>;
+};
+const splitComparisons =
+	(splitComparisonWindow.__bigaoSplitComparisonsV1 ??= new Map<
+		WorkspaceLeaf,
+		SplitComparison
+	>());
+
+export function closeSplitComparison(app: App): number {
+	const workspace = app.workspace;
+	const markdownLeaves = new Set(workspace.getLeavesOfType('markdown'));
+	let closedCount = 0;
+	for (const [leaf, comparison] of splitComparisons) {
+		clearInlineDiffForLeaves(comparison.sourceLeaf, leaf);
+		if (
+			markdownLeaves.has(leaf) &&
+			leaf.view instanceof MarkdownView &&
+			leaf.view.file?.path === comparison.comparePath
+		) {
+			leaf.detach();
+			closedCount += 1;
+		}
+	}
+	splitComparisons.clear();
+	return closedCount;
+}
+
+export async function startSplitComparison(
+	app: App,
+	direction: SplitDirection,
+	sourceView?: MarkdownFileInfo
+): Promise<boolean> {
+	try {
+		const workspace = app.workspace;
+		const view = sourceView?.file
+			? sourceView
+			: workspace.getActiveViewOfType(MarkdownView);
+		const targetFile = view?.file ?? workspace.getActiveFile();
+		let sourceLeaf = view instanceof MarkdownView ? view.leaf : null;
+		if (!sourceLeaf && targetFile) {
+			sourceLeaf =
+				workspace
+					.getLeavesOfType('markdown')
+					.find((leaf) => leaf.view instanceof MarkdownView && leaf.view.file?.path === targetFile.path) ??
+				null;
+		}
+		if (!targetFile || !sourceLeaf) {
+			new Notice('比稿：请先在笔记编辑窗格中打开一篇稿子');
+			return false;
+		}
+		const compareFile = await pickCompareFile(app, targetFile);
+		if (!compareFile) return false;
+
+		const previousLeaves = workspace.getLeavesOfType(BIGAO_PANEL_VIEW).slice();
+		const existing = [...splitComparisons].find(([leaf, comparison]) => {
+			const sourcePath = comparison.sourcePath ??
+				(sourceLeaf.view instanceof MarkdownView ? sourceLeaf.view.file?.path : undefined);
+			return comparison.sourceLeaf === sourceLeaf &&
+				comparison.direction === direction &&
+				sourcePath === targetFile.path &&
+				workspace.getLeavesOfType('markdown').includes(leaf) &&
+				leaf.view instanceof MarkdownView &&
+				leaf.view.file?.path === comparison.comparePath;
+		});
+		if (existing) {
+			const [existingLeaf, comparison] = existing;
+			try {
+				await existingLeaf.openFile(compareFile, { active: true });
+				if (
+					!(existingLeaf.view instanceof MarkdownView) ||
+					existingLeaf.view.file?.path !== compareFile.path
+				) {
+					throw new Error(`「${compareFile.name}」没有载入分屏窗格`);
+				}
+				comparison.comparePath = compareFile.path;
+				comparison.sourcePath = targetFile.path;
+				workspace.revealLeaf(existingLeaf);
+				scheduleInlineDiffRefresh(app);
+				new Notice(
+					`比稿：已在${direction === 'vertical' ? '左右' : '上下'}分屏中打开「${compareFile.name}」`
+				);
+				return true;
+			} catch (error) {
+				console.error('比稿：更新分屏对照失败', error);
+				new Notice(
+					`比稿：打开分屏对照失败 —— ${error instanceof Error ? error.message : String(error)}`
+				);
+				return false;
+			}
+		}
+		let leaf: WorkspaceLeaf | null = null;
+		try {
+			leaf = workspace.createLeafBySplit(sourceLeaf, direction);
+			await leaf.openFile(compareFile, { active: true });
+			if (!(leaf.view instanceof MarkdownView) || leaf.view.file?.path !== compareFile.path) {
+				throw new Error(`「${compareFile.name}」没有载入分屏窗格`);
+			}
+			workspace.revealLeaf(leaf);
+			splitComparisons.set(leaf, {
+				comparePath: compareFile.path,
+				sourcePath: targetFile.path,
+				direction,
+				sourceLeaf,
+			});
+			for (const previousLeaf of previousLeaves) {
+				if (previousLeaf !== leaf) previousLeaf.detach();
+			}
+			scheduleInlineDiffRefresh(app);
+			new Notice(
+				`比稿：已在${direction === 'vertical' ? '左右' : '上下'}分屏中打开「${compareFile.name}」`
+			);
+			return true;
+		} catch (error) {
+			leaf?.detach();
+			throw error;
+		}
+	} catch (error) {
+		console.error('比稿：准备分屏对照失败', error);
+		new Notice(
+			`比稿：打开分屏对照失败 —— ${error instanceof Error ? error.message : String(error)}`
+		);
+		return false;
+	}
+}
