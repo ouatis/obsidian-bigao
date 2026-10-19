@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- 本目录对应 JARDIN vault 中已安装的 `bigao` 插件；manifest 版本为 `1.2.2`。
+- 本目录对应 JARDIN vault 中已安装的 `bigao` 插件；manifest 版本为 `0.1.0`（2026-10-19 从继承的 `1.2.2` 重置，本插件自此按自己的版本线走）。
 - 根目录 `main.js` 仍是冻结的当前安装版。`src/` 以原插件 1.1.2 为基线恢复，已通过本轮核心行为对照及 Obsidian 1.14.4 独立测试库验证；详见 `src/RESTORE-PLAN.md`。这不是全部环境与边界场景等价的承诺。
 - `npm run build` 只生成 `dist/main.js` 等验证产物；`npm run package:candidate` 生成完整的 `dist/candidate/` 源码候选安装包。当前没有自动安装步骤，不得未经验证和明确安装请求覆盖根目录安装版。
 

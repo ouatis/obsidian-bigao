@@ -8,7 +8,8 @@ was not found. The reconstructed source has now passed the core behavioral
 comparison and isolated desktop checks described below; equivalence in every
 platform, theme and edge case is not claimed.
 
-The installed plugin is locally customized (`manifest.json` version `1.2.2`).
+The installed plugin is locally customized (`manifest.json` version `0.1.0`;
+the `1.2.2` it inherited from upstream file-diff was reset on 2026-10-19).
 Keep the current root `main.js` intact until these sources are reconciled with
 the local bundle and the full verification pipeline can build and test the
 result. Preserve the Chinese comparison UI, tokenization and palette settings,

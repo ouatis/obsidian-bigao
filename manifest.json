@@ -1,7 +1,7 @@
 {
 	"id": "bigao",
 	"name": "比稿 · Collate",
-	"version": "1.2.2",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "并排比对两篇笔记：相同处不着色，差异处高亮。中文分词，差异精确到词。Side-by-side diff for Obsidian notes, with Chinese word segmentation.",
 	"author": "Till Friebe（原插件 file-diff，MIT）",
