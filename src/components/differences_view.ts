@@ -10,11 +10,14 @@ import {
 } from '../data/comparison_limits.ts';
 import { preventEmptyString } from '../utils/string_utils.ts';
 import { diffWordsWithTokenizer } from '../utils/word_diff.ts';
+import { namespacedId } from '../ids.ts';
 import { readOpenEditorText } from '../utils/open_editor_text.ts';
 import { ActionLine } from './action_line.ts';
 import { DeleteFileModal } from './modals/delete_file_modal.ts';
 
-export const VIEW_TYPE_DIFFERENCES = 'bigao-differences-view';
+export function differencesViewType(): string {
+	return namespacedId('differences-view');
+}
 
 export interface ViewState {
 	file1: TFile;
@@ -74,7 +77,7 @@ export class DifferencesView extends ItemView {
 	private wasDeleteModalShown = false;
 
 	override getViewType(): string {
-		return VIEW_TYPE_DIFFERENCES;
+		return differencesViewType();
 	}
 
 	override getDisplayText(): string {

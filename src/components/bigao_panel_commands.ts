@@ -1,5 +1,5 @@
 import { App, MarkdownFileInfo, MarkdownView, Notice, WorkspaceLeaf } from 'obsidian';
-import { BIGAO_PANEL_VIEW } from './bigao_panel_view.ts';
+import { panelViewType } from './bigao_panel_view.ts';
 import { pickCompareFile } from './bigao_compare_file_modal.ts';
 import { clearInlineDiffForLeaves, scheduleInlineDiffRefresh } from './inline_diff.ts';
 
@@ -66,7 +66,7 @@ export async function startSplitComparison(
 		const compareFile = await pickCompareFile(app, targetFile);
 		if (!compareFile) return false;
 
-		const previousLeaves = workspace.getLeavesOfType(BIGAO_PANEL_VIEW).slice();
+		const previousLeaves = workspace.getLeavesOfType(panelViewType()).slice();
 		const existing = [...splitComparisons].find(([leaf, comparison]) => {
 			const sourcePath = comparison.sourcePath ??
 				(sourceLeaf.view instanceof MarkdownView ? sourceLeaf.view.file?.path : undefined);

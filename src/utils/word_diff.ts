@@ -1,5 +1,7 @@
 import { diffArrays } from 'diff';
 
+import { namespacedId } from '../ids.ts';
+
 export interface WordChange {
 	value: string;
 	added?: boolean;
@@ -8,7 +10,7 @@ export interface WordChange {
 
 export function chineseDiffEnabled(): boolean {
 	try {
-		const setting = localStorage.getItem('bigao-zh-diff');
+		const setting = localStorage.getItem(namespacedId('zh-diff'));
 		return setting === null || setting === '1' || setting === 'true';
 	} catch {
 		return true;

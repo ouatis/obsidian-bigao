@@ -17,6 +17,7 @@ npm run verify
 ## 结构
 
 - `src/main.ts`：注册插件视图和稳定命令 ID。
+- `src/ids.ts`：全局标识符前缀（命令 ID、视图类型、localStorage 键），由 manifest 的 `id` 派生；安装版 id 为 `bigao` 时与历史 `bigao-` ID 完全一致。
 - `src/components/bigao_panel_view.ts`：面板生命周期、渲染调度和光标跟随。
 - `src/components/bigao_panel_commands.ts`：左右/上下原生分屏工作流。
 - `src/components/inline_diff.ts`、`src/data/inline_decoration_ranges.ts`：原生分屏两侧的差异范围计算、只读高亮覆盖层与清理。

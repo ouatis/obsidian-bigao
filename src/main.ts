@@ -2,12 +2,12 @@ import { Notice, Plugin, TFile } from 'obsidian';
 
 import {
 	DifferencesView,
-	VIEW_TYPE_DIFFERENCES,
+	differencesViewType,
 	ViewState,
 } from './components/differences_view.ts';
 import {
 	BigaoPanelView,
-	BIGAO_PANEL_VIEW,
+	panelViewType,
 } from './components/bigao_panel_view.ts';
 import {
 	closeSplitComparison,
@@ -17,35 +17,40 @@ import { pickCompareFile } from './components/bigao_compare_file_modal.ts';
 import { RiskyActionModal } from './components/modals/risky_action_modal.ts';
 import { applyPalette } from './utils/palette.ts';
 import { registerInlineDiffRuntime } from './components/inline_diff.ts';
+import { configurePluginId, namespacedId } from './ids.ts';
 
 export default class FileDiffPlugin extends Plugin {
-	fileDiffMergeWarningKey = 'bigao-merge-warning';
+	get fileDiffMergeWarningKey(): string {
+		return namespacedId('merge-warning');
+	}
 
 	override onload(): void {
+		configurePluginId(this.manifest?.id);
+
 		applyPalette();
 		registerInlineDiffRuntime(this);
 
 		this.registerView(
-			VIEW_TYPE_DIFFERENCES,
+			differencesViewType(),
 			(leaf) => new DifferencesView(leaf)
 		);
 		this.registerView(
-			BIGAO_PANEL_VIEW,
+			panelViewType(),
 			(leaf) => new BigaoPanelView(leaf, this.app)
 		);
 
 		this.addCommand({
-			id: 'bigao-panel-on',
+			id: namespacedId('panel-on'),
 			name: '比稿：开启左右分屏对照',
 			callback: () => startSplitComparison(this.app, 'vertical'),
 		});
 		this.addCommand({
-			id: 'bigao-panel-on-horizontal',
+			id: namespacedId('panel-on-horizontal'),
 			name: '比稿：开启上下分屏对照',
 			callback: () => startSplitComparison(this.app, 'horizontal'),
 		});
 		this.addCommand({
-			id: 'bigao-panel-off',
+			id: namespacedId('panel-off'),
 			name: '比稿：关闭分屏对照',
 			callback: () => {
 				const closedCount = closeSplitComparison(this.app);
@@ -58,7 +63,7 @@ export default class FileDiffPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'bigao-compare',
+			id: namespacedId('compare'),
 			name: '比稿：对比两篇',
 			editorCallback: async () => {
 				const activeFile = this.app.workspace.getActiveFile();
@@ -80,7 +85,7 @@ export default class FileDiffPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'bigao-compare-and-merge',
+			id: namespacedId('compare-and-merge'),
 			name: '比稿：对比并合并',
 			editorCallback: async () => {
 				// Show warning when this option is selected for the first time
@@ -110,7 +115,7 @@ export default class FileDiffPlugin extends Plugin {
 		});
 
 		this.addCommand({
-			id: 'bigao-find-sync-conflicts',
+			id: namespacedId('find-sync-conflicts'),
 			name: '比稿：查找同步冲突并合并',
 			callback: async () => {
 				// Show warning when this option is selected for the first time
@@ -144,8 +149,8 @@ export default class FileDiffPlugin extends Plugin {
 	}
 
 	override async onunload(): Promise<void> {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_DIFFERENCES);
-		this.app.workspace.detachLeavesOfType(BIGAO_PANEL_VIEW);
+		this.app.workspace.detachLeavesOfType(differencesViewType());
+		this.app.workspace.detachLeavesOfType(panelViewType());
 	}
 
 	private getFileToCompare(activeFile: TFile): Promise<TFile | null> {
@@ -175,13 +180,13 @@ export default class FileDiffPlugin extends Plugin {
 	}
 
 	async openDifferencesView(state: ViewState): Promise<void> {
-		// Closes all leafs (views) of the type VIEW_TYPE_DIFFERENCES
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_DIFFERENCES);
+		// Closes all leaves (views) of the differences view type
+		this.app.workspace.detachLeavesOfType(differencesViewType());
 
-		// Opens a new leaf (view) of the type VIEW_TYPE_DIFFERENCES
+		// Opens a new leaf (view) of the differences view type
 		const leaf = this.app.workspace.getLeaf(true);
 		leaf.setViewState({
-			type: VIEW_TYPE_DIFFERENCES,
+			type: differencesViewType(),
 			active: true,
 			state: state as unknown as Record<string, unknown>,
 		});

@@ -10,11 +10,14 @@ import {
 	computePanelDifferences,
 	MAX_PANEL_LINES,
 } from '../data/panel_differences.ts';
+import { namespacedId } from '../ids.ts';
 import { tokenizeWords } from '../utils/word_diff.ts';
 import { readOpenEditorText } from '../utils/open_editor_text.ts';
 import { renderFull, scrollToLine } from './bigao_panel_render.ts';
 
-export const BIGAO_PANEL_VIEW = 'bigao-panel-view';
+export function panelViewType(): string {
+	return namespacedId('panel-view');
+}
 
 export class BigaoPanelView extends ItemView {
 	private readonly hostApp: App;
@@ -35,7 +38,7 @@ export class BigaoPanelView extends ItemView {
 	}
 
 	override getViewType(): string {
-		return BIGAO_PANEL_VIEW;
+		return panelViewType();
 	}
 
 	override getDisplayText(): string {
