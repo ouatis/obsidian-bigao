@@ -6,6 +6,12 @@ _两份稿子，并排放着。_
 
 [English](./README.md)
 
+<p>
+  <img src="https://img.shields.io/github/v/release/ouatis/obsidian-bigao?style=flat-square&label=version&color=c24e18" alt="Latest release">
+  <img src="https://img.shields.io/github/downloads/ouatis/obsidian-bigao/total?style=flat-square&logo=obsidian&logoColor=white&label=downloads&color=6d665d" alt="Downloads">
+  <img src="https://img.shields.io/github/license/ouatis/obsidian-bigao?style=flat-square&label=license&color=406e40" alt="MIT License">
+</p>
+
 </div>
 
 ![Collate：两张稿纸并排，差异的词在两侧着色。概念插画，非插件截图。](img/cover.svg)

@@ -6,6 +6,12 @@ _Two drafts, side by side._
 
 [简体中文](./README.zh-CN.md)
 
+<p>
+  <img src="https://img.shields.io/github/v/release/ouatis/obsidian-bigao?style=flat-square&label=version&color=c24e18" alt="Latest release">
+  <img src="https://img.shields.io/github/downloads/ouatis/obsidian-bigao/total?style=flat-square&logo=obsidian&logoColor=white&label=downloads&color=6d665d" alt="Downloads">
+  <img src="https://img.shields.io/github/license/ouatis/obsidian-bigao?style=flat-square&label=license&color=406e40" alt="MIT License">
+</p>
+
 </div>
 
 ![Collate: two note sheets side by side, differing words tinted in both. Concept illustration, not a plugin screenshot.](img/cover.svg)
