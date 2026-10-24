@@ -1,7 +1,7 @@
 {
 	"id": "bigao",
 	"name": "Collate",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"minAppVersion": "0.15.0",
 	"description": "并排对照两篇笔记，按词高亮差异。Two notes side by side, differences marked word by word.",
 	"author": "SigiL",
