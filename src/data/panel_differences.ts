@@ -1,5 +1,6 @@
 import { structuredPatch } from 'diff';
 import { FileDifferences } from './file_differences.ts';
+import { lineSimilarity, pairMovedBlocks } from './block_pairing.ts';
 
 export interface CharacterRange {
 	from: number;
@@ -24,10 +25,6 @@ export const MAX_PANEL_LINES = 4000;
 const MAX_LCS_CELLS = 1_000_000;
 const MAX_LINE_MATCH_PAIRS = 65_536;
 const MAX_TOKEN_COUNT = 800;
-/** Blocks below this word-overlap are treated as unrelated, not as moves. */
-const BLOCK_MATCH_THRESHOLD = 0.5;
-/** Blocks larger than this are skipped for cross-hunk pairing (cost guard). */
-const MAX_BLOCK_CHARS = 20_000;
 
 interface TokenOffset {
 	t: string;
@@ -126,34 +123,6 @@ function addedRanges(
 	return ranges;
 }
 
-function lineSimilarity(
-	oldLine: string,
-	currentLine: string,
-	wordTokenizer: WordTokenizer | undefined
-): number {
-	const oldTokens = tokenize(oldLine, wordTokenizer).filter(
-		(token) => token && token.trim()
-	);
-	const currentTokens = tokenize(currentLine, wordTokenizer).filter(
-		(token) => token && token.trim()
-	);
-	if (!oldTokens.length || !currentTokens.length) return 0;
-
-	const counts = new Map<string, number>();
-	let common = 0;
-	for (const token of oldTokens) {
-		counts.set(token, (counts.get(token) || 0) + 1);
-	}
-	for (const token of currentTokens) {
-		const count = counts.get(token) || 0;
-		if (count > 0) {
-			common += 1;
-			counts.set(token, count - 1);
-		}
-	}
-	return common / Math.max(oldTokens.length, currentTokens.length);
-}
-
 /**
  * Computes changed current-note lines against the comparison note.
  * `wordTokenizer` should preserve the source text when concatenated so ranges
@@ -186,99 +155,61 @@ export function computePanelDifferences(
 	const changes = FileDifferences.fromParsedDiff(parsed).differences;
 	const budget = { remaining: MAX_LCS_CELLS };
 
-	// Pure removal / pure addition changes become blocks; paired blocks let a
-	// moved or rewritten paragraph line up across hunks instead of showing up
-	// as a brand-new block plus a bare removal count.
-	const addedBlocks = new Map<number, { lines: string[]; globalStart: number }>();
-	const removedBlocks = new Map<number, { lines: string[]; globalStart: number }>();
-	for (let index = 0; index < changes.length; index += 1) {
-		const change = changes[index];
-		const oldLines = change.file1Lines || [];
-		const newLines = change.file2Lines || [];
-		if (!oldLines.length && newLines.length) {
-			addedBlocks.set(index, { lines: newLines, globalStart: change.file2Start });
-		}
-		if (oldLines.length && !newLines.length) {
-			removedBlocks.set(index, { lines: oldLines, globalStart: change.file1Start });
-		}
-	}
-
+	// Moved or rewritten paragraphs line up across hunks through block pairing
+	// instead of showing up as a brand-new block plus a bare removal count.
 	const globallyUsedOld = new Set<number>();
 	const prematched = new Map<number, Map<number, PanelDifference>>();
-	if (addedBlocks.size && removedBlocks.size) {
-		const candidates: { added: number; removed: number; score: number }[] = [];
-		for (const [addedIndex, added] of addedBlocks) {
-			const addedText = added.lines.join('\n');
-			if (addedText.length > MAX_BLOCK_CHARS) continue;
-			for (const [removedIndex, removed] of removedBlocks) {
-				const removedText = removed.lines.join('\n');
-				if (removedText.length > MAX_BLOCK_CHARS) continue;
-				const score = lineSimilarity(removedText, addedText, wordTokenizer);
-				if (score >= BLOCK_MATCH_THRESHOLD) {
-					candidates.push({ added: addedIndex, removed: removedIndex, score });
-				}
-			}
-		}
-		candidates.sort((a, b) => b.score - a.score);
-		const takenAdded = new Set<number>();
-		const takenRemoved = new Set<number>();
-		for (const candidate of candidates) {
-			if (takenAdded.has(candidate.added) || takenRemoved.has(candidate.removed)) continue;
-			takenAdded.add(candidate.added);
-			takenRemoved.add(candidate.removed);
-			const added = addedBlocks.get(candidate.added)!;
-			const removedBlock = removedBlocks.get(candidate.removed)!;
-			const matched = new Map<number, PanelDifference>();
-			const used = new Set<number>();
-			for (let index = 0; index < added.lines.length; index += 1) {
-				const currentLine = String(added.lines[index] || '').replace(/\r$/, '');
-				if (!currentLine.trim()) continue;
+	for (const pair of pairMovedBlocks(changes, wordTokenizer)) {
+		const matched = new Map<number, PanelDifference>();
+		const used = new Set<number>();
+		for (let index = 0; index < pair.added.lines.length; index += 1) {
+			const currentLine = String(pair.added.lines[index] || '').replace(/\r$/, '');
+			if (!currentLine.trim()) continue;
 
-				let match = -1;
-				if (
-					added.lines.length === removedBlock.lines.length ||
-					added.lines.length * removedBlock.lines.length > MAX_LINE_MATCH_PAIRS
-				) {
-					match = index < removedBlock.lines.length ? index : -1;
-				} else {
-					let bestScore = 0;
-					for (let candidateIndex = 0; candidateIndex < removedBlock.lines.length; candidateIndex += 1) {
-						if (used.has(candidateIndex)) continue;
-						const candidateLine = String(removedBlock.lines[candidateIndex] || '').replace(/\r$/, '');
-						const score = lineSimilarity(candidateLine, currentLine, wordTokenizer);
-						if (score > bestScore) {
-							bestScore = score;
-							match = candidateIndex;
-						}
+			let match = -1;
+			if (
+				pair.added.lines.length === pair.removed.lines.length ||
+				pair.added.lines.length * pair.removed.lines.length > MAX_LINE_MATCH_PAIRS
+			) {
+				match = index < pair.removed.lines.length ? index : -1;
+			} else {
+				let bestScore = 0;
+				for (let candidateIndex = 0; candidateIndex < pair.removed.lines.length; candidateIndex += 1) {
+					if (used.has(candidateIndex)) continue;
+					const candidateLine = String(pair.removed.lines[candidateIndex] || '').replace(/\r$/, '');
+					const score = lineSimilarity(candidateLine, currentLine, wordTokenizer);
+					if (score > bestScore) {
+						bestScore = score;
+						match = candidateIndex;
 					}
 				}
-
-				let ranges: CharacterRange[];
-				if (match < 0) {
-					ranges = [{ from: 0, to: currentLine.length }];
-				} else {
-					used.add(match);
-					globallyUsedOld.add(removedBlock.globalStart + match);
-					const oldLine = String(removedBlock.lines[match] || '').replace(/\r$/, '');
-					ranges = addedRanges(oldLine, currentLine, wordTokenizer, budget);
-				}
-
-				const nonEmptyRanges = ranges.filter((range) => range.to > range.from);
-				const removed =
-					match >= 0 &&
-					String(removedBlock.lines[match] || '').replace(/\r$/, '') !== currentLine;
-				if (nonEmptyRanges.length || removed) {
-					matched.set(index, {
-						a: added.globalStart + index,
-						b: match < 0 ? -1 : removedBlock.globalStart + match,
-						ranges: nonEmptyRanges,
-						whole: match < 0,
-						removed,
-					});
-				}
 			}
-			prematched.set(candidate.added, matched);
+
+			let ranges: CharacterRange[];
+			if (match < 0) {
+				ranges = [{ from: 0, to: currentLine.length }];
+			} else {
+				used.add(match);
+				globallyUsedOld.add(pair.removed.start + match);
+				const oldLine = String(pair.removed.lines[match] || '').replace(/\r$/, '');
+				ranges = addedRanges(oldLine, currentLine, wordTokenizer, budget);
+			}
+
+			const nonEmptyRanges = ranges.filter((range) => range.to > range.from);
+			const removed =
+				match >= 0 &&
+				String(pair.removed.lines[match] || '').replace(/\r$/, '') !== currentLine;
+			if (nonEmptyRanges.length || removed) {
+				matched.set(index, {
+					a: pair.added.start + index,
+					b: match < 0 ? -1 : pair.removed.start + match,
+					ranges: nonEmptyRanges,
+					whole: match < 0,
+					removed,
+				});
+			}
 		}
+		prematched.set(pair.added.differenceIndex, matched);
 	}
 
 	for (let changeIndex = 0; changeIndex < changes.length; changeIndex += 1) {

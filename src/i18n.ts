@@ -57,6 +57,9 @@ export interface Strings {
 	deleteBody: (keptName: string, removedName: string) => string;
 	deleteButton: string;
 	cancel: string;
+	/** 全文差异视图的移动标注。Full-diff move badges. */
+	movedOutLabel: (line: number) => string;
+	movedInLabel: (line: number) => string;
 }
 
 const LANGUAGE_OVERRIDE_KEY = 'bigao-language';

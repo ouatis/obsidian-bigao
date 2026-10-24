@@ -61,4 +61,6 @@ export const EN: Strings = {
 		`Delete this duplicate? This cannot be undone.`,
 	deleteButton: 'Delete',
 	cancel: 'Cancel',
+	movedOutLabel: (line) => `↔ moved to comparison line ${line}`,
+	movedInLabel: (line) => `↔ moved in from source line ${line}`,
 };

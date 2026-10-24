@@ -383,3 +383,22 @@ body[data-bigao-palette="forest"] {
 	opacity: 0.7;
 	margin-top: 0.1em;
 }
+
+/* Full-diff move blocks ---------------------------------------------------- */
+
+.difference.is-moved .file-diff__top-line__bg,
+.difference.is-moved .file-diff__bottom-line__bg {
+	background: color-mix(in srgb, var(--background-modifier-border) 40%, var(--background-primary));
+}
+
+.difference.is-moved .file-diff_top-line__character,
+.difference.is-moved .file-diff_bottom-line__character {
+	background: color-mix(in srgb, var(--background-modifier-border) 25%, var(--background-primary));
+}
+
+.file-diff__moved-badge {
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	padding: 2px 0 4px;
+}

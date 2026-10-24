@@ -585,6 +585,105 @@ var FileDifferences = class {
   }
 };
 
+// src/data/block_pairing.ts
+var BLOCK_MATCH_THRESHOLD = 0.5;
+var MAX_BLOCK_CHARS = 2e4;
+function tokenize2(text, wordTokenizer) {
+  if (wordTokenizer) {
+    try {
+      return wordTokenizer(text || "");
+    } catch {
+    }
+  }
+  return text ? text.split(/(\s+)/) : [];
+}
+function lineSimilarity(oldLine, currentLine, wordTokenizer) {
+  const oldTokens = tokenize2(oldLine, wordTokenizer).filter(
+    (token) => token && token.trim()
+  );
+  const currentTokens = tokenize2(currentLine, wordTokenizer).filter(
+    (token) => token && token.trim()
+  );
+  if (!oldTokens.length || !currentTokens.length) return 0;
+  const counts = /* @__PURE__ */ new Map();
+  let common = 0;
+  for (const token of oldTokens) {
+    counts.set(token, (counts.get(token) || 0) + 1);
+  }
+  for (const token of currentTokens) {
+    const count = counts.get(token) || 0;
+    if (count > 0) {
+      common += 1;
+      counts.set(token, count - 1);
+    }
+  }
+  return common / Math.max(oldTokens.length, currentTokens.length);
+}
+function classifySideBlocks(differences) {
+  const added = /* @__PURE__ */ new Map();
+  const removed = /* @__PURE__ */ new Map();
+  for (let index = 0; index < differences.length; index += 1) {
+    const difference = differences[index];
+    const oldLines = difference.file1Lines || [];
+    const newLines = difference.file2Lines || [];
+    if (!oldLines.length && newLines.length) {
+      added.set(index, { lines: newLines, start: difference.file2Start });
+    }
+    if (oldLines.length && !newLines.length) {
+      removed.set(index, { lines: oldLines, start: difference.file1Start });
+    }
+  }
+  return { added, removed };
+}
+function pairMovedBlocks(differences, wordTokenizer, options = {}) {
+  const threshold = options.threshold ?? BLOCK_MATCH_THRESHOLD;
+  const maxBlockChars = options.maxBlockChars ?? MAX_BLOCK_CHARS;
+  const { added, removed } = classifySideBlocks(differences);
+  if (!added.size || !removed.size) return [];
+  const candidates = [];
+  for (const [addedIndex, addedBlock] of added) {
+    const addedText = addedBlock.lines.join("\n");
+    if (addedText.length > maxBlockChars) continue;
+    for (const [removedIndex, removedBlock] of removed) {
+      const removedText = removedBlock.lines.join("\n");
+      if (removedText.length > maxBlockChars) continue;
+      const score = lineSimilarity(removedText, addedText, wordTokenizer);
+      if (score >= threshold) {
+        candidates.push({
+          added: { ...addedBlock, differenceIndex: addedIndex },
+          removed: { ...removedBlock, differenceIndex: removedIndex },
+          score
+        });
+      }
+    }
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  const pairs = [];
+  const takenAdded = /* @__PURE__ */ new Set();
+  const takenRemoved = /* @__PURE__ */ new Set();
+  for (const candidate of candidates) {
+    if (takenAdded.has(candidate.added.differenceIndex) || takenRemoved.has(candidate.removed.differenceIndex)) continue;
+    takenAdded.add(candidate.added.differenceIndex);
+    takenRemoved.add(candidate.removed.differenceIndex);
+    pairs.push(candidate);
+  }
+  return pairs;
+}
+function buildMovePairings(differences, wordTokenizer, options = {}) {
+  const pairings = /* @__PURE__ */ new Map();
+  for (const pair of pairMovedBlocks(differences, wordTokenizer, options)) {
+    pairings.set(pair.added.differenceIndex, {
+      line: pair.removed.start + 1,
+      kind: "moved-in"
+    });
+    pairings.set(pair.removed.differenceIndex, {
+      line: pair.added.start + 1,
+      kind: "moved-out"
+    });
+  }
+  return pairings;
+}
+
 // src/data/comparison_limits.ts
 var MAX_COMPARISON_LINES = 4e3;
 var MAX_COMPARISON_CHARACTERS = 1e6;
@@ -719,7 +818,9 @@ var EN = {
   deleteTitle: (name) => `Delete "${name}"?`,
   deleteBody: (keptName, removedName) => `"${keptName}" and "${removedName}" have identical content. Delete this duplicate? This cannot be undone.`,
   deleteButton: "Delete",
-  cancel: "Cancel"
+  cancel: "Cancel",
+  movedOutLabel: (line) => `↔ moved to comparison line ${line}`,
+  movedInLabel: (line) => `↔ moved in from source line ${line}`
 };
 
 // src/locales/zh-CN.ts
@@ -769,7 +870,9 @@ var ZH_CN = {
   deleteTitle: (name) => `删除「${name}」？`,
   deleteBody: (keptName, removedName) => `「${keptName}」与「${removedName}」的内容完全相同。要删除这个重复文件吗？请注意，此操作不可撤销。`,
   deleteButton: "删除",
-  cancel: "取消"
+  cancel: "取消",
+  movedOutLabel: (line) => `↔ 移至对照稿第 ${line} 行`,
+  movedInLabel: (line) => `↔ 自原稿第 ${line} 行移入`
 };
 
 // src/i18n.ts
@@ -1084,6 +1187,8 @@ var DifferencesView = class extends import_obsidian3.ItemView {
   file1Content = "";
   file2Content = "";
   fileDifferences;
+  /** Diff blocks paired as moves; keys are indexes into fileDifferences.differences. */
+  movePairings = /* @__PURE__ */ new Map();
   file1Lines = [];
   file2Lines = [];
   wasDeleteModalShown = false;
@@ -1183,6 +1288,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         return true;
       }
       const fileDifferences = FileDifferences.fromParsedDiff(parsedDiff);
+      this.movePairings = buildMovePairings(fileDifferences.differences, tokenizeWords);
       if (revision !== this.updateRevision || state !== this.state) return false;
       this.file1Content = file1Content;
       this.file2Content = file2Content;
@@ -1228,11 +1334,12 @@ var DifferencesView = class extends import_obsidian3.ItemView {
       const candidate = differences[differenceIndex];
       const difference = candidate?.file1Start === lineCount1 && candidate.file2Start === lineCount2 ? candidate : null;
       if (difference != null) {
+        const move = this.movePairings.get(differenceIndex);
         differenceIndex += 1;
         const differenceContainer = container.createDiv({
           cls: "difference"
         });
-        this.buildDifferenceVisualizer(differenceContainer, difference);
+        this.buildDifferenceVisualizer(differenceContainer, difference, move);
         lineCount1 += difference.file1Lines.length;
         lineCount2 += difference.file2Lines.length;
       } else {
@@ -1247,7 +1354,14 @@ var DifferencesView = class extends import_obsidian3.ItemView {
       }
     }
   }
-  buildDifferenceVisualizer(container, difference) {
+  buildDifferenceVisualizer(container, difference, move) {
+    if (move) {
+      container.addClass("is-moved");
+      container.createDiv({
+        cls: "file-diff__moved-badge",
+        text: move.kind === "moved-out" ? getStrings().movedOutLabel(move.line) : getStrings().movedInLabel(move.line)
+      });
+    }
     if (this.state.showMergeOption) {
       new ActionLine({
         app: this.app,
@@ -1354,9 +1468,7 @@ var MAX_PANEL_LINES = 4e3;
 var MAX_LCS_CELLS = 1e6;
 var MAX_LINE_MATCH_PAIRS = 65536;
 var MAX_TOKEN_COUNT = 800;
-var BLOCK_MATCH_THRESHOLD = 0.5;
-var MAX_BLOCK_CHARS = 2e4;
-function tokenize2(text, wordTokenizer) {
+function tokenize3(text, wordTokenizer) {
   if (wordTokenizer) {
     try {
       return wordTokenizer(text || "");
@@ -1377,8 +1489,8 @@ function tokenOffsets(tokens) {
 }
 function addedRanges(oldLine, currentLine, wordTokenizer, budget) {
   if (!currentLine) return [];
-  const oldTokens = tokenOffsets(tokenize2(oldLine, wordTokenizer));
-  const currentTokens = tokenOffsets(tokenize2(currentLine, wordTokenizer));
+  const oldTokens = tokenOffsets(tokenize3(oldLine, wordTokenizer));
+  const currentTokens = tokenOffsets(tokenize3(currentLine, wordTokenizer));
   if (!currentTokens.length) return [];
   if (!oldTokens.length) return [{ from: 0, to: currentLine.length }];
   const cells = oldTokens.length * currentTokens.length;
@@ -1424,28 +1536,6 @@ function addedRanges(oldLine, currentLine, wordTokenizer, budget) {
   }
   return ranges;
 }
-function lineSimilarity(oldLine, currentLine, wordTokenizer) {
-  const oldTokens = tokenize2(oldLine, wordTokenizer).filter(
-    (token) => token && token.trim()
-  );
-  const currentTokens = tokenize2(currentLine, wordTokenizer).filter(
-    (token) => token && token.trim()
-  );
-  if (!oldTokens.length || !currentTokens.length) return 0;
-  const counts = /* @__PURE__ */ new Map();
-  let common = 0;
-  for (const token of oldTokens) {
-    counts.set(token, (counts.get(token) || 0) + 1);
-  }
-  for (const token of currentTokens) {
-    const count = counts.get(token) || 0;
-    if (count > 0) {
-      common += 1;
-      counts.set(token, count - 1);
-    }
-  }
-  return common / Math.max(oldTokens.length, currentTokens.length);
-}
 function computePanelDifferences(docText, otherText, wordTokenizer) {
   const differences = [];
   const currentLines = (docText || "").split("\n");
@@ -1463,87 +1553,51 @@ function computePanelDifferences(docText, otherText, wordTokenizer) {
   if (!parsed.hunks.length) return differences;
   const changes = FileDifferences.fromParsedDiff(parsed).differences;
   const budget = { remaining: MAX_LCS_CELLS };
-  const addedBlocks = /* @__PURE__ */ new Map();
-  const removedBlocks = /* @__PURE__ */ new Map();
-  for (let index = 0; index < changes.length; index += 1) {
-    const change = changes[index];
-    const oldLines = change.file1Lines || [];
-    const newLines = change.file2Lines || [];
-    if (!oldLines.length && newLines.length) {
-      addedBlocks.set(index, { lines: newLines, globalStart: change.file2Start });
-    }
-    if (oldLines.length && !newLines.length) {
-      removedBlocks.set(index, { lines: oldLines, globalStart: change.file1Start });
-    }
-  }
   const globallyUsedOld = /* @__PURE__ */ new Set();
   const prematched = /* @__PURE__ */ new Map();
-  if (addedBlocks.size && removedBlocks.size) {
-    const candidates = [];
-    for (const [addedIndex, added] of addedBlocks) {
-      const addedText = added.lines.join("\n");
-      if (addedText.length > MAX_BLOCK_CHARS) continue;
-      for (const [removedIndex, removed] of removedBlocks) {
-        const removedText = removed.lines.join("\n");
-        if (removedText.length > MAX_BLOCK_CHARS) continue;
-        const score = lineSimilarity(removedText, addedText, wordTokenizer);
-        if (score >= BLOCK_MATCH_THRESHOLD) {
-          candidates.push({ added: addedIndex, removed: removedIndex, score });
-        }
-      }
-    }
-    candidates.sort((a, b) => b.score - a.score);
-    const takenAdded = /* @__PURE__ */ new Set();
-    const takenRemoved = /* @__PURE__ */ new Set();
-    for (const candidate of candidates) {
-      if (takenAdded.has(candidate.added) || takenRemoved.has(candidate.removed)) continue;
-      takenAdded.add(candidate.added);
-      takenRemoved.add(candidate.removed);
-      const added = addedBlocks.get(candidate.added);
-      const removedBlock = removedBlocks.get(candidate.removed);
-      const matched = /* @__PURE__ */ new Map();
-      const used = /* @__PURE__ */ new Set();
-      for (let index = 0; index < added.lines.length; index += 1) {
-        const currentLine = String(added.lines[index] || "").replace(/\r$/, "");
-        if (!currentLine.trim()) continue;
-        let match = -1;
-        if (added.lines.length === removedBlock.lines.length || added.lines.length * removedBlock.lines.length > MAX_LINE_MATCH_PAIRS) {
-          match = index < removedBlock.lines.length ? index : -1;
-        } else {
-          let bestScore = 0;
-          for (let candidateIndex = 0; candidateIndex < removedBlock.lines.length; candidateIndex += 1) {
-            if (used.has(candidateIndex)) continue;
-            const candidateLine = String(removedBlock.lines[candidateIndex] || "").replace(/\r$/, "");
-            const score = lineSimilarity(candidateLine, currentLine, wordTokenizer);
-            if (score > bestScore) {
-              bestScore = score;
-              match = candidateIndex;
-            }
+  for (const pair of pairMovedBlocks(changes, wordTokenizer)) {
+    const matched = /* @__PURE__ */ new Map();
+    const used = /* @__PURE__ */ new Set();
+    for (let index = 0; index < pair.added.lines.length; index += 1) {
+      const currentLine = String(pair.added.lines[index] || "").replace(/\r$/, "");
+      if (!currentLine.trim()) continue;
+      let match = -1;
+      if (pair.added.lines.length === pair.removed.lines.length || pair.added.lines.length * pair.removed.lines.length > MAX_LINE_MATCH_PAIRS) {
+        match = index < pair.removed.lines.length ? index : -1;
+      } else {
+        let bestScore = 0;
+        for (let candidateIndex = 0; candidateIndex < pair.removed.lines.length; candidateIndex += 1) {
+          if (used.has(candidateIndex)) continue;
+          const candidateLine = String(pair.removed.lines[candidateIndex] || "").replace(/\r$/, "");
+          const score = lineSimilarity(candidateLine, currentLine, wordTokenizer);
+          if (score > bestScore) {
+            bestScore = score;
+            match = candidateIndex;
           }
         }
-        let ranges;
-        if (match < 0) {
-          ranges = [{ from: 0, to: currentLine.length }];
-        } else {
-          used.add(match);
-          globallyUsedOld.add(removedBlock.globalStart + match);
-          const oldLine = String(removedBlock.lines[match] || "").replace(/\r$/, "");
-          ranges = addedRanges(oldLine, currentLine, wordTokenizer, budget);
-        }
-        const nonEmptyRanges = ranges.filter((range) => range.to > range.from);
-        const removed = match >= 0 && String(removedBlock.lines[match] || "").replace(/\r$/, "") !== currentLine;
-        if (nonEmptyRanges.length || removed) {
-          matched.set(index, {
-            a: added.globalStart + index,
-            b: match < 0 ? -1 : removedBlock.globalStart + match,
-            ranges: nonEmptyRanges,
-            whole: match < 0,
-            removed
-          });
-        }
       }
-      prematched.set(candidate.added, matched);
+      let ranges;
+      if (match < 0) {
+        ranges = [{ from: 0, to: currentLine.length }];
+      } else {
+        used.add(match);
+        globallyUsedOld.add(pair.removed.start + match);
+        const oldLine = String(pair.removed.lines[match] || "").replace(/\r$/, "");
+        ranges = addedRanges(oldLine, currentLine, wordTokenizer, budget);
+      }
+      const nonEmptyRanges = ranges.filter((range) => range.to > range.from);
+      const removed = match >= 0 && String(pair.removed.lines[match] || "").replace(/\r$/, "") !== currentLine;
+      if (nonEmptyRanges.length || removed) {
+        matched.set(index, {
+          a: pair.added.start + index,
+          b: match < 0 ? -1 : pair.removed.start + match,
+          ranges: nonEmptyRanges,
+          whole: match < 0,
+          removed
+        });
+      }
     }
+    prematched.set(pair.added.differenceIndex, matched);
   }
   for (let changeIndex = 0; changeIndex < changes.length; changeIndex += 1) {
     const change = changes[changeIndex];

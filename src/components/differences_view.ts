@@ -2,6 +2,7 @@ import { structuredPatch, type PatchOptions } from 'diff';
 import { ItemView, TFile, ViewStateResult, WorkspaceLeaf } from 'obsidian';
 import { Difference } from '../data/difference.ts';
 import { FileDifferences } from '../data/file_differences.ts';
+import { buildMovePairings, type MoveInfo } from '../data/block_pairing.ts';
 import {
 	COMPARISON_DIFF_TIMEOUT_MS,
 	MAX_COMPARISON_CHARACTERS,
@@ -13,6 +14,7 @@ import { diffWordsWithTokenizer } from '../utils/word_diff.ts';
 import { namespacedId } from '../ids.ts';
 import { getStrings } from '../i18n.ts';
 import { readOpenEditorText } from '../utils/open_editor_text.ts';
+import { tokenizeWords } from '../utils/word_diff.ts';
 import { ActionLine } from './action_line.ts';
 import { DeleteFileModal } from './modals/delete_file_modal.ts';
 
@@ -70,6 +72,9 @@ export class DifferencesView extends ItemView {
 	private file2Content = '';
 
 	private fileDifferences!: FileDifferences;
+
+	/** Diff blocks paired as moves; keys are indexes into fileDifferences.differences. */
+	private movePairings: Map<number, MoveInfo> = new Map();
 
 	private file1Lines: string[] = [];
 
@@ -197,6 +202,7 @@ export class DifferencesView extends ItemView {
 			}
 
 			const fileDifferences = FileDifferences.fromParsedDiff(parsedDiff);
+			this.movePairings = buildMovePairings(fileDifferences.differences, tokenizeWords);
 			if (revision !== this.updateRevision || state !== this.state) return false;
 			this.file1Content = file1Content;
 			this.file2Content = file2Content;
@@ -260,11 +266,12 @@ export class DifferencesView extends ItemView {
 					: null;
 
 			if (difference != null) {
+				const move = this.movePairings.get(differenceIndex);
 				differenceIndex += 1;
 				const differenceContainer = container.createDiv({
 					cls: 'difference',
 				});
-				this.buildDifferenceVisualizer(differenceContainer, difference);
+				this.buildDifferenceVisualizer(differenceContainer, difference, move);
 				lineCount1 += difference.file1Lines.length;
 				lineCount2 += difference.file2Lines.length;
 			} else {
@@ -285,8 +292,19 @@ export class DifferencesView extends ItemView {
 
 	private buildDifferenceVisualizer(
 		container: HTMLDivElement,
-		difference: Difference
+		difference: Difference,
+		move?: MoveInfo
 	): void {
+		if (move) {
+			container.addClass('is-moved');
+			container.createDiv({
+				cls: 'file-diff__moved-badge',
+				text:
+					move.kind === 'moved-out'
+						? getStrings().movedOutLabel(move.line)
+						: getStrings().movedInLabel(move.line),
+			});
+		}
 		if (this.state.showMergeOption) {
 			new ActionLine({
 				app: this.app,

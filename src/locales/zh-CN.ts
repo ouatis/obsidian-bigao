@@ -59,4 +59,6 @@ export const ZH_CN: Strings = {
 		`要删除这个重复文件吗？请注意，此操作不可撤销。`,
 	deleteButton: '删除',
 	cancel: '取消',
+	movedOutLabel: (line) => `↔ 移至对照稿第 ${line} 行`,
+	movedInLabel: (line) => `↔ 自原稿第 ${line} 行移入`,
 };
