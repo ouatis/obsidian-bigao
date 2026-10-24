@@ -28,6 +28,7 @@
 !/img/
 /img/**
 !/img/*.svg
+!/img/*.html
 !/scripts/
 /scripts/**
 !/scripts/**/*.mjs
