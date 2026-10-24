@@ -207,7 +207,9 @@ body[data-bigao-palette="forest"] {
 	margin-bottom: 5rem; /* 80px */
 }
 
-/* ===== 比稿 · 侧边对照面板 ===== */
+/* ===== 比稿 · 侧边对照面板 =====
+   家族界面层约定：4px 留白网格，控件圆角 8px，面板圆角 12px，
+   常规状态过渡 160ms；配色与字体一律继承 Obsidian 宿主变量。 */
 .bigao-panel__empty {
 	color: var(--text-muted);
 	padding: 1rem;
@@ -325,11 +327,12 @@ body[data-bigao-palette="forest"] {
 	cursor: pointer;
 	font-size: 0.78em;
 	padding: 0.1em 0.6em;
-	border-radius: 10px;
+	border-radius: 8px;
 	border: 1px solid var(--background-modifier-border);
 	color: var(--text-muted);
 	user-select: none;
 	white-space: nowrap;
+	transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
 .bigao-panel__follow[data-active="1"] {
@@ -340,6 +343,12 @@ body[data-bigao-palette="forest"] {
 
 .bigao-panel__follow:hover {
 	color: var(--text-normal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bigao-panel__follow {
+		transition: none;
+	}
 }
 
 /* 旧结构保留兼容 */

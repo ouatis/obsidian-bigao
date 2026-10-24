@@ -1,4 +1,5 @@
 import type { PanelDifference } from '../data/panel_differences.ts';
+import { getStrings } from '../i18n.ts';
 
 export function renderFull(
 	container: HTMLElement,
@@ -6,6 +7,7 @@ export function renderFull(
 	differences: PanelDifference[]
 ): HTMLElement {
 	container.empty();
+	const t = getStrings();
 	const byLine = new Map(differences.map((difference) => [difference.a, difference]));
 	const body = container.createDiv({ cls: 'bigao-panel__body' });
 	for (let lineNumber = 0; lineNumber < Math.max(docLines.length, 1); lineNumber += 1) {
@@ -19,11 +21,11 @@ export function renderFull(
 		if (difference?.removedLines) {
 			line.createSpan({
 				cls: 'bigao-panel__removed',
-				text: `− 对照稿多 ${difference.removedLines} 行`,
+				text: t.panelRemovedLines(difference.removedLines),
 			});
 		}
 		if (difference?.removed) {
-			line.createSpan({ cls: 'bigao-panel__removed', text: '− 对照稿有删减' });
+			line.createSpan({ cls: 'bigao-panel__removed', text: t.panelRemovedBlock });
 		}
 		if (!text) {
 			line.createSpan({ cls: 'bigao-panel__blank' });

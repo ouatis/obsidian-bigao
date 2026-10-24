@@ -11,6 +11,7 @@ import {
 import { preventEmptyString } from '../utils/string_utils.ts';
 import { diffWordsWithTokenizer } from '../utils/word_diff.ts';
 import { namespacedId } from '../ids.ts';
+import { getStrings } from '../i18n.ts';
 import { readOpenEditorText } from '../utils/open_editor_text.ts';
 import { ActionLine } from './action_line.ts';
 import { DeleteFileModal } from './modals/delete_file_modal.ts';
@@ -82,12 +83,12 @@ export class DifferencesView extends ItemView {
 
 	override getDisplayText(): string {
 		if (this.state?.file1 && this.state?.file2) {
-			return (
-				`比稿：${this.state.file1.name} ↔ ` +
+			return getStrings().viewDisplayNamePair(
+				this.state.file1.name,
 				this.state.file2.name
 			);
 		}
-		return '比稿';
+		return getStrings().viewDisplayName;
 	}
 
 	override async setState(
@@ -145,15 +146,16 @@ export class DifferencesView extends ItemView {
 			if (revision !== this.updateRevision || state !== this.state) return false;
 
 			const tooLongMessage = (file: TFile, content: string): string | null => {
+				const t = getStrings();
 				const lineCount = Math.max(
 					1,
 					content.split('\n').length - (content.endsWith('\n') ? 1 : 0)
 				);
 				if (lineCount > MAX_COMPARISON_LINES) {
-					return `「${file.name}」超过 ${MAX_COMPARISON_LINES.toLocaleString()} 行，全文差异视图暂不计算。可缩短稿件，或使用原生分屏阅读。`;
+					return t.limitLines(file.name, MAX_COMPARISON_LINES);
 				}
 				if (content.length > MAX_COMPARISON_CHARACTERS) {
-					return `「${file.name}」超过 ${MAX_COMPARISON_CHARACTERS.toLocaleString()} 个字符，全文差异视图暂不计算。可缩短稿件，或使用原生分屏阅读。`;
+					return t.limitCharacters(file.name, MAX_COMPARISON_CHARACTERS);
 				}
 				return null;
 			};
@@ -187,7 +189,10 @@ export class DifferencesView extends ItemView {
 				diffOptions
 			) as ReturnType<typeof structuredPatch> | undefined;
 			if (!parsedDiff) {
-				this.comparisonError = `两篇稿件的差异规模超过安全计算上限（${MAX_COMPARISON_DIFF_EDITS.toLocaleString()} 次编辑或 ${COMPARISON_DIFF_TIMEOUT_MS} 毫秒）。可使用原生分屏继续阅读。`;
+				this.comparisonError = getStrings().limitDiffBudget(
+					MAX_COMPARISON_DIFF_EDITS,
+					COMPARISON_DIFF_TIMEOUT_MS
+				);
 				return true;
 			}
 
@@ -203,7 +208,9 @@ export class DifferencesView extends ItemView {
 		} catch (error) {
 			if (revision !== this.updateRevision || state !== this.state) return false;
 			console.error('比稿：读取或计算全文差异失败', error);
-			this.comparisonError = `读取或计算差异失败：${error instanceof Error ? error.message : String(error)}`;
+			this.comparisonError = getStrings().readError(
+				error instanceof Error ? error.message : String(error)
+			);
 			return true;
 		}
 	}

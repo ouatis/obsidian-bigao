@@ -1,77 +1,103 @@
-# 比稿 · Collate
+<div align="center">
 
-在 Obsidian 原生左右或上下分屏中对照两篇 Markdown 笔记，并在两篇原文内高亮差异。
+# Collate
 
-这是由 ouatis 维护的早期实验版本，基于 Till Friebe 的 [obsidian-file-diff](https://github.com/friebetill/obsidian-file-diff) 修改。目前用于保存已验证的本地安装版本及恢复中的源码，尚未提交 Obsidian 社区插件列表。
+_Two drafts, side by side._
 
-## 当前功能
+[简体中文](./README.zh-CN.md)
 
-- 使用 Obsidian 原生左右、上下分屏，保留正常笔记编辑体验。
-- 两篇原文中按词标记各自独有的内容，支持中文分词。
-- 差异底色、底线和段落边标不改写笔记正文；相同内容不着色。
-- 优先读取已打开笔记的编辑缓冲区，编辑后短暂防抖刷新差异。
-- 对照稿选择器支持按名称或路径搜索，可随时取消。
-- 保留全文差异视图、对比并合并及同步冲突查找入口。
+</div>
 
-分屏两侧目前使用相同的差异词配色，表示“这一侧独有的内容”，不代表统一的新增或删除方向。
+![Collate: two note sheets side by side, differing words tinted in both. Concept illustration, not a plugin screenshot.](img/cover.svg)
 
-## 手动安装当前快照
+An Obsidian plugin that opens two notes in a native split and marks what
+differs between them — in both notes, down to the word.
 
-1. 在自己的 Obsidian 库中创建 `.obsidian/plugins/bigao/` 文件夹。
-2. 将本仓库根目录的以下四个文件复制到该文件夹：
-   - `manifest.json`
-   - `main.js`
-   - `styles.css`
-   - `inline-diff-runtime-v9.js`
-3. 重新加载 Obsidian，在第三方插件设置中启用「比稿 · Collate」。
-4. 打开一篇原稿，在命令面板运行「比稿：开启左右分屏对照」或「比稿：开启上下分屏对照」，再选择另一篇稿件。
+Chinese text is segmented through `Intl.Segmenter`, so differences are
+highlighted word by word instead of line by line. Both sides read the
+unsaved editor buffer first and refresh after a short debounce, identical
+text is never colored, and the highlighting itself never writes to the
+notes. Both sides of a split currently use the same word-difference color,
+meaning "unique to this side" — not a unified add/delete direction.
 
-运行「比稿：关闭分屏对照」会关闭插件创建且仍显示原对照稿的窗格；已被改作他用的窗格会保留。合并操作会修改笔记，请在确认前检查差异并保留备份。
+Collate grew out of Till Friebe's
+[obsidian-file-diff](https://github.com/friebetill/obsidian-file-diff) (MIT)
+and is now maintained by SigiL as part of the ouatis Obsidian family,
+alongside [Desk Lamp](https://github.com/ouatis/obsidian-desklamp),
+[Skill Switchboard](https://github.com/ouatis/obsidian-skill-switchboard)
+and [Scriptorium](https://github.com/ouatis/obsidian-scriptorium). Quiet
+panels and thin rules share a visual rhythm with the rest of the family;
+colors and fonts follow your Obsidian theme. English and Simplified Chinese
+are available.
 
-目前只在 Windows 桌面版 Obsidian 中完成实际验证；移动端兼容性尚未验证。编辑器内高亮需要笔记处于编辑模式，不保证阅读模式显示同样效果。
+> [!NOTE]
+> Collate is an early experimental build, verified on Windows desktop
+> Obsidian only, and not yet submitted to the community plugin directory.
 
-## 开发与验证
+## Install
 
-使用 Node.js 22.6 或更新版本：
+Requires Obsidian 0.15.0 or newer. Download `main.js`, `manifest.json` and
+`styles.css` from the
+[releases page](https://github.com/ouatis/obsidian-bigao/releases), place
+them in `<vault>/.obsidian/plugins/bigao/`, then enable the plugin.
+
+## Use
+
+Run a command from the command palette:
+
+| Command | What it does |
+| --- | --- |
+| `Collate: Start side-by-side comparison` | Pick a note and open it next to the current one in a left/right split |
+| `Collate: Start top-and-bottom comparison` | The same, stacked vertically |
+| `Collate: Close side-by-side comparison` | Close the comparison panes Collate created |
+| `Collate: Compare two notes` | Full-document diff view |
+| `Collate: Compare and merge` | Diff view with per-hunk merge actions |
+| `Collate: Find sync conflicts and merge` | Walk through `sync-conflict` notes and merge them one by one |
+
+In a Simplified Chinese Obsidian the same commands read `比稿：…`. The
+side panel follows the source cursor while you write; the follow toggle
+sits in its header. `Collate: Close side-by-side comparison` only closes
+panes that still show the note Collate opened there; panes you have
+repurposed are left alone. Merge actions modify notes — review the
+differences and keep backups before confirming.
+
+## Notes on scale
+
+The full-diff view is bounded to 4,000 lines and 1,000,000 characters per
+note, and the diff computation itself to 2,000 edits or 500 ms — oversized
+inputs show an explicit message instead of a wrong "no differences". The
+inline split highlighting caps at 4,000 lines per note; past the cap the
+highlight stays empty, which must not be read as "no differences".
+
+Editor highlighting requires the note to be in editing mode; reading mode
+is not guaranteed to look the same, and comparison tracking is not restored
+after a full workspace reload — rerun the start command when needed.
+
+## Development
+
+With Node.js 22.6 or newer:
 
 ```sh
 npm ci
 npm run verify
 ```
 
-验证包括当前安装包检查、TypeScript 类型检查、逻辑回归、隔离构建及替身环境中的运行测试。真实 Obsidian 分屏、重载和界面检查仍需单独进行。
+runs the dependency audit, the installed-bundle regression, the strict
+TypeScript check, the source unit tests, a clean production build and the
+installed-vs-source parity checks. `AGENTS.md` records the maintenance
+conventions; `README.local.md` and `src/RESTORE-PLAN.md` document the
+restoration history.
 
-**根目录 `main.js` 是当前使用的冻结安装包。** `src/` 已通过本轮核心行为对照与 Windows Obsidian 1.14.4 的独立测试库验证，但不代表所有环境和边界情况都已覆盖。`npm run build` 只生成 `dist/` 验证产物，不会覆盖安装包。
+`npm run package:candidate` writes a full candidate package with checksums
+to `dist/candidate/` (three files; the inline diff runtime is bundled into
+`main.js`). For a real desktop smoke test, provide the local Obsidian paths
+and run `npm run test:obsidian` — it only ever touches isolated temporary
+vaults.
 
-## 构建源码候选安装包
+## License
 
-```sh
-npm run package:candidate
-```
-
-完整候选包生成到 `dist/candidate/`，包含 `main.js`、`manifest.json`、`styles.css` 和文件校验记录 `build-info.json`。源码版已经把行内高亮模块打包进 `main.js`，因此安装到独立测试库时只需前三个文件，不再需要旧安装包的单独运行文件。此命令不会安装或覆盖现用插件。
-
-如需重复真实桌面检查，先构建候选包，再在 Windows PowerShell 中提供本机的 Obsidian 路径：
-
-```powershell
-$env:BIGAO_OBSIDIAN_EXE = 'C:\path\to\Obsidian.exe'
-$env:BIGAO_OBSIDIAN_ASAR = Join-Path $env:APPDATA 'obsidian\obsidian-1.14.4.asar'
-npm run test:obsidian
-```
-
-请按实际安装版本调整 `.asar` 文件名。脚本仅在临时目录中创建独立资料目录、两个人工测试库和插件副本，结束时关闭测试进程；不读写真实笔记库。原安装包与源码候选包分别验证分屏、双侧高亮、编辑刷新、插件重载、全文差异及取消合并警告；本地报告与截图保存在忽略提交的 `dist/` 中，临时测试库保留供排查。
-
-## 已知限制
-
-- 分屏行内高亮的计算上限为每篇 4,000 行；超过上限时可能没有高亮，不应据此判断两篇没有差异。
-- 大幅改写、段落移动或长段落的对齐效果仍可能不理想。
-- 高亮以只读编辑器覆盖层绘制，某些主题或复杂 Markdown 排版仍需进一步核验。
-- 工作区完全重载后的对照关系恢复尚未保证；需要时重新运行开启分屏命令。
-
-本仓库只跟踪明确列出的插件文件、源码及测试；不收录笔记正文、个人设置、调试截图、旧运行文件或依赖目录。
-
-## 来源与许可
-
-原插件：[Till Friebe / obsidian-file-diff](https://github.com/friebetill/obsidian-file-diff)，MIT License。恢复源码所用基线为 `1.1.2`，提交 `d566ded402f72e1508f33b640d6f96d7c32c9a00`；原作者版权及许可文本保留在 [LICENSE](LICENSE)。
-
-本地维护背景及一致性核对状态见 [README.local.md](README.local.md) 和 [src/RESTORE-PLAN.md](src/RESTORE-PLAN.md)。
+MIT, following upstream. Collate is based on
+[obsidian-file-diff](https://github.com/friebetill/obsidian-file-diff) by
+Till Friebe; the restoration baseline is the upstream `1.1.2` tag
+(`d566ded402f72e1508f33b640d6f96d7c32c9a00`). The original copyright and
+license text are preserved in [LICENSE](LICENSE).

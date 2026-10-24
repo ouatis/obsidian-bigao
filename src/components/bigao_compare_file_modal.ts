@@ -1,4 +1,5 @@
 import { App, Notice, SuggestModal, TFile } from 'obsidian';
+import { getStrings } from '../i18n.ts';
 
 class CompareFileModal extends SuggestModal<TFile> {
 	private readonly files: TFile[];
@@ -53,18 +54,19 @@ class CompareFileModal extends SuggestModal<TFile> {
 }
 
 export async function pickCompareFile(app: App, activeFile: TFile): Promise<TFile | null> {
+	const t = getStrings();
 	const files = app.vault
 		.getMarkdownFiles()
 		.filter((file) => file.path !== activeFile.path)
 		.sort((a, b) => b.stat.mtime - a.stat.mtime);
 	if (!files.length) {
-		new Notice('库里没有其他笔记可作为对照');
+		new Notice(t.noticeNoOtherNotes);
 		return null;
 	}
 
 	return new Promise((resolve) => {
 		const modal = new CompareFileModal(app, files, resolve);
-		modal.setPlaceholder('选择一篇作为对照稿…（可输入名称或路径筛选）');
+		modal.setPlaceholder(t.pickerPlaceholder);
 		modal.open();
 	});
 }

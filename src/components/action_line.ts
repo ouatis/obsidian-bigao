@@ -3,6 +3,7 @@ import { Difference } from '../data/difference.ts';
 import { deleteLines, insertLine, replaceLine } from '../utils/string_utils.ts';
 import { ActionLineButton } from './action_line_button.ts';
 import { ActionLineDivider } from './action_line_divider.ts';
+import { getStrings } from '../i18n.ts';
 
 type VoidCallback = () => void;
 
@@ -40,6 +41,7 @@ export class ActionLine {
 	private triggerRebuild: VoidCallback;
 
 	build(container: HTMLDivElement): void {
+		const t = getStrings();
 		const actionLine = container.createDiv({
 			cls: 'flex flex-row gap-1 py-0-5',
 		});
@@ -49,42 +51,42 @@ export class ActionLine {
 
 		if (hasPlusLines && hasMinusLines) {
 			new ActionLineButton({
-				text: '采用上方',
+				text: t.keepTop,
 				onClick: (e) => this.acceptTopClick(e, this.difference),
 			}).build(actionLine);
 			ActionLineDivider.build(actionLine);
 			new ActionLineButton({
-				text: '采用下方',
+				text: t.keepBottom,
 				onClick: (e) => this.acceptBottomClick(e, this.difference),
 			}).build(actionLine);
 			ActionLineDivider.build(actionLine);
 			new ActionLineButton({
-				text: '全部采用',
+				text: t.keepAll,
 				onClick: (e) => this.acceptAllClick(e, this.difference),
 			}).build(actionLine);
 			ActionLineDivider.build(actionLine);
 			new ActionLineButton({
-				text: '全部放弃',
+				text: t.discardAll,
 				onClick: (e) => this.acceptNoneClick(e, this.difference),
 			}).build(actionLine);
 		} else if (hasMinusLines) {
 			new ActionLineButton({
-				text: `采用「${this.file1.name}」的版本`,
+				text: t.keepVersionOf(this.file1.name),
 				onClick: (e) => this.insertFile1Difference(e, this.difference),
 			}).build(actionLine);
 			ActionLineDivider.build(actionLine);
 			new ActionLineButton({
-				text: '删除这段',
+				text: t.deleteBlock,
 				onClick: (e) => this.discardFile1Difference(e, this.difference),
 			}).build(actionLine);
 		} else if (hasPlusLines) {
 			new ActionLineButton({
-				text: `采用「${this.file2.name}」的版本`,
+				text: t.keepVersionOf(this.file2.name),
 				onClick: (e) => this.insertFile2Difference(e, this.difference),
 			}).build(actionLine);
 			ActionLineDivider.build(actionLine);
 			new ActionLineButton({
-				text: '删除这段',
+				text: t.deleteBlock,
 				onClick: (e) => this.discardFile2Difference(e, this.difference),
 			}).build(actionLine);
 		}

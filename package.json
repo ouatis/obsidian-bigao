@@ -1,8 +1,8 @@
 {
   "name": "obsidian-bigao-local",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Local verification scripts for the installed Bigao Obsidian plugin.",
+  "description": "Local verification scripts for the installed Collate Obsidian plugin.",
   "scripts": {
     "check": "node --check main.js",
     "typecheck": "tsc --noEmit --skipLibCheck",
@@ -15,7 +15,8 @@
     "package:candidate": "npm run build && node scripts/package-candidate.mjs",
     "test:obsidian": "node scripts/obsidian-smoke.mjs",
     "test": "npm run test:bundle && npm run test:source",
-    "verify": "npm run check && npm run typecheck && npm test && npm run build && npm run test:source-bundle && npm run test:parity"
+    "audit:deps": "npm audit --audit-level=moderate",
+    "verify": "npm run audit:deps && npm run check && npm run typecheck && npm test && npm run build && npm run test:source-bundle && npm run test:parity"
   },
   "engines": {
     "node": ">=22.6"
@@ -26,7 +27,7 @@
     "@types/diff": "^5.0.2",
     "@types/node": "^22.10.2",
     "diff": "^5.1.0",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.12",
     "obsidian": "^1.13.1",
     "tslib": "^2.8.1",
     "typescript": "^5.7.2"

@@ -1,4 +1,5 @@
 import { App, Modal, TFile } from 'obsidian';
+import { getStrings } from '../../i18n.ts';
 
 export class DeleteFileModal extends Modal {
 	constructor(args: {
@@ -20,16 +21,15 @@ export class DeleteFileModal extends Modal {
 	private readonly onDone: (error: Error | null) => void;
 
 	onOpen(): void {
+		const t = getStrings();
 		// Counteract gravity pull by moving box up for balanced composition
 		this.modalEl.addClass('mb-20');
 
 		this.contentEl.createEl('h3', {
-			text: `删除「${this.file2.name}」？`,
+			text: t.deleteTitle(this.file2.name),
 		});
 		this.contentEl.createEl('p', {
-			text:
-				`「${this.file1.name}」与「${this.file2.name}」的内容完全相同。` +
-				`要删除这个重复文件吗？请注意，此操作不可撤销。`,
+			text: t.deleteBody(this.file1.name, this.file2.name),
 		});
 
 		const buttonContainer = this.contentEl.createDiv(
@@ -37,11 +37,11 @@ export class DeleteFileModal extends Modal {
 		);
 
 		const deleteButton = buttonContainer.createEl('button', {
-			text: '删除',
+			text: t.deleteButton,
 			cls: 'mod-warning mr-2',
 		});
 		const cancelButton = buttonContainer.createEl('button', {
-			text: '取消',
+			text: t.cancel,
 		});
 
 		deleteButton.addEventListener('click', () => this.handleDeleteClick());

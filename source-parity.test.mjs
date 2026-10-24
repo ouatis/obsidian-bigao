@@ -28,10 +28,11 @@ const candidate = (await build({
 })).outputFiles[0].text;
 const installedExports = `
 	module.exports = {
-		Plugin: FileDiffPlugin, compute,
-		tokenize: (value) => wordDiff.tokenize(value).filter(Boolean),
-		diffWords, FileDifferences, structuredPatch, DifferencesView, ActionLine,
-		renderFull: _bprRenderFull, applyPalette: __bigaoApplyPalette,
+		Plugin: FileDiffPlugin, compute: computePanelDifferences,
+		tokenize: tokenizeWords,
+		diffWords: diffWordsWithTokenizer, FileDifferences, structuredPatch,
+		DifferencesView, ActionLine,
+		renderFull, applyPalette,
 	};
 `;
 
@@ -134,7 +135,7 @@ for (const enabled of ['1', '0']) {
 		const source = loadRuntime('source', settings).api;
 		for (const [left, right] of cases) {
 			assert.deepEqual(source.tokenize(left), original.tokenize(left), `tokens: ${JSON.stringify(left)}`);
-			assert.deepEqual(source.compute(left, right, source.tokenize), original.compute(left, right),
+			assert.deepEqual(source.compute(left, right, source.tokenize), original.compute(left, right, original.tokenize),
 				`ranges: ${JSON.stringify([left, right])}`);
 			const normalize = (changes) => changes.map(({ value, added, removed }) =>
 				({ value, added: Boolean(added), removed: Boolean(removed) }));

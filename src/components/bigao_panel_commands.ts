@@ -2,6 +2,7 @@ import { App, MarkdownFileInfo, MarkdownView, Notice, WorkspaceLeaf } from 'obsi
 import { panelViewType } from './bigao_panel_view.ts';
 import { pickCompareFile } from './bigao_compare_file_modal.ts';
 import { clearInlineDiffForLeaves, scheduleInlineDiffRefresh } from './inline_diff.ts';
+import { getStrings } from '../i18n.ts';
 
 type SplitDirection = 'horizontal' | 'vertical';
 
@@ -45,6 +46,7 @@ export async function startSplitComparison(
 	direction: SplitDirection,
 	sourceView?: MarkdownFileInfo
 ): Promise<boolean> {
+	const t = getStrings();
 	try {
 		const workspace = app.workspace;
 		const view = sourceView?.file
@@ -60,7 +62,7 @@ export async function startSplitComparison(
 				null;
 		}
 		if (!targetFile || !sourceLeaf) {
-			new Notice('比稿：请先在笔记编辑窗格中打开一篇稿子');
+			new Notice(t.noticeOpenEditorFirst);
 			return false;
 		}
 		const compareFile = await pickCompareFile(app, targetFile);
@@ -85,20 +87,22 @@ export async function startSplitComparison(
 					!(existingLeaf.view instanceof MarkdownView) ||
 					existingLeaf.view.file?.path !== compareFile.path
 				) {
-					throw new Error(`「${compareFile.name}」没有载入分屏窗格`);
+					throw new Error(t.errorPaneNotLoaded(compareFile.name));
 				}
 				comparison.comparePath = compareFile.path;
 				comparison.sourcePath = targetFile.path;
 				workspace.revealLeaf(existingLeaf);
 				scheduleInlineDiffRefresh(app);
 				new Notice(
-					`比稿：已在${direction === 'vertical' ? '左右' : '上下'}分屏中打开「${compareFile.name}」`
+					direction === 'vertical'
+						? t.noticeOpenedVertical(compareFile.name)
+						: t.noticeOpenedHorizontal(compareFile.name)
 				);
 				return true;
 			} catch (error) {
 				console.error('比稿：更新分屏对照失败', error);
 				new Notice(
-					`比稿：打开分屏对照失败 —— ${error instanceof Error ? error.message : String(error)}`
+					t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
 				);
 				return false;
 			}
@@ -108,7 +112,7 @@ export async function startSplitComparison(
 			leaf = workspace.createLeafBySplit(sourceLeaf, direction);
 			await leaf.openFile(compareFile, { active: true });
 			if (!(leaf.view instanceof MarkdownView) || leaf.view.file?.path !== compareFile.path) {
-				throw new Error(`「${compareFile.name}」没有载入分屏窗格`);
+				throw new Error(t.errorPaneNotLoaded(compareFile.name));
 			}
 			workspace.revealLeaf(leaf);
 			splitComparisons.set(leaf, {
@@ -122,7 +126,9 @@ export async function startSplitComparison(
 			}
 			scheduleInlineDiffRefresh(app);
 			new Notice(
-				`比稿：已在${direction === 'vertical' ? '左右' : '上下'}分屏中打开「${compareFile.name}」`
+				direction === 'vertical'
+					? t.noticeOpenedVertical(compareFile.name)
+					: t.noticeOpenedHorizontal(compareFile.name)
 			);
 			return true;
 		} catch (error) {
@@ -132,7 +138,7 @@ export async function startSplitComparison(
 	} catch (error) {
 		console.error('比稿：准备分屏对照失败', error);
 		new Notice(
-			`比稿：打开分屏对照失败 —— ${error instanceof Error ? error.message : String(error)}`
+			t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
 		);
 		return false;
 	}

@@ -13,6 +13,7 @@ import {
 import { namespacedId } from '../ids.ts';
 import { tokenizeWords } from '../utils/word_diff.ts';
 import { readOpenEditorText } from '../utils/open_editor_text.ts';
+import { getStrings } from '../i18n.ts';
 import { renderFull, scrollToLine } from './bigao_panel_render.ts';
 
 export function panelViewType(): string {
@@ -42,7 +43,7 @@ export class BigaoPanelView extends ItemView {
 	}
 
 	override getDisplayText(): string {
-		return '比稿：对照差异';
+		return getStrings().panelDisplayName;
 	}
 
 	override getIcon(): string {
@@ -82,17 +83,18 @@ export class BigaoPanelView extends ItemView {
 	}
 
 	private buildChrome(differenceCount: number): void {
+		const t = getStrings();
 		const header = this.contentEl.createDiv({ cls: 'bigao-panel__head' });
-		header.createDiv({ cls: 'bigao-panel__count', text: `${differenceCount} 处差异` });
+		header.createDiv({ cls: 'bigao-panel__count', text: t.differenceCount(differenceCount) });
 		const followButton = header.createDiv({ cls: 'bigao-panel__follow' });
 		followButton.setAttribute('role', 'button');
 		followButton.setAttribute('tabindex', '0');
 		followButton.setAttribute('aria-pressed', String(this.follow));
 		followButton.setAttribute('data-active', this.follow ? '1' : '0');
-		followButton.setAttribute('title', '切换是否跟随原稿光标');
+		followButton.setAttribute('title', t.followToggleTitle);
 		const updateLabel = () => {
 			followButton.empty();
-			followButton.createSpan({ text: this.follow ? '跟随中' : '不跟随' });
+			followButton.createSpan({ text: this.follow ? t.followOn : t.followOff });
 			followButton.setAttribute('aria-pressed', String(this.follow));
 			followButton.setAttribute('data-active', this.follow ? '1' : '0');
 		};
@@ -105,7 +107,7 @@ export class BigaoPanelView extends ItemView {
 			} else {
 				this.stopFollowPolling();
 			}
-			new Notice(this.follow ? '比稿：面板将跟随光标' : '比稿：面板已停止跟随');
+			new Notice(this.follow ? t.noticeFollowOn : t.noticeFollowOff);
 		};
 		followButton.addEventListener('click', toggleFollow);
 		followButton.addEventListener('keydown', (event) => {
@@ -129,7 +131,7 @@ export class BigaoPanelView extends ItemView {
 				this.contentEl.empty();
 				this.contentEl.createDiv({
 					cls: 'bigao-panel__empty',
-					text: '用「比稿：开启左右分屏对照」选择一篇对照稿。',
+					text: getStrings().panelHint,
 				});
 				return;
 			}
@@ -147,7 +149,7 @@ export class BigaoPanelView extends ItemView {
 				this.contentEl.empty();
 				this.contentEl.createDiv({
 					cls: 'bigao-panel__empty',
-					text: `任一篇笔记超过 ${MAX_PANEL_LINES} 行，分屏对照暂不计算。`,
+					text: getStrings().panelLineLimit(MAX_PANEL_LINES),
 				});
 				return;
 			}
@@ -167,7 +169,9 @@ export class BigaoPanelView extends ItemView {
 			this.contentEl.empty();
 			this.contentEl.createDiv({
 				cls: 'bigao-panel__empty',
-				text: `更新失败：${error instanceof Error ? error.message : String(error)}`,
+				text: getStrings().panelUpdateFailed(
+					error instanceof Error ? error.message : String(error)
+				),
 			});
 		}
 	}
@@ -227,7 +231,7 @@ export class BigaoPanelView extends ItemView {
 		this.contentEl.empty();
 		this.contentEl.createDiv({
 			cls: 'bigao-panel__empty',
-			text: '用「比稿：开启左右分屏对照」选择一篇对照稿。',
+			text: getStrings().panelHint,
 		});
 		this.registerEvent(
 			this.hostApp.workspace.on('editor-change', (_editor, info) => {

@@ -1,0 +1,48 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # One step on purpose: `npm run verify` already orders the dependency
+      # audit, the installed-bundle checks, the build and the parity tests.
+      - run: npm run verify
+
+  release:
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Stage release assets
+        run: |
+          mkdir -p dist/release-assets
+          cp dist/main.js manifest.json styles.css dist/release-assets/
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/release-assets/main.js
+            dist/release-assets/manifest.json
+            dist/release-assets/styles.css
+          generate_release_notes: true

@@ -1,6 +1,6 @@
-# 比稿 · Collate（本地安装）
+# Collate · 比稿（本地安装）
 
-此目录是当前 JARDIN vault 中安装的插件目录，插件 ID 为 `bigao`。
+此目录是当前 JARDIN vault 中安装的插件目录，插件 ID 为 `bigao`，manifest 名称 `Collate`。自 2026-10-24 的 `0.2.0` 起，根目录 `main.js` 是 `src/` 的未压缩 UTF-8 构建（行内高亮模块已打包在内），并由「安装文件与全新源码构建逐字节相等」的回归测试保障同步；历史上的冻结安装版与配套运行文件 `inline-diff-runtime-v9.js` 仍保留在仓库与 git 历史中以便回退，但新安装版不再需要该运行文件。
 
 ## 本地验证
 

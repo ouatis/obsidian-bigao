@@ -1,4 +1,5 @@
 import { App, Modal } from 'obsidian';
+import { getStrings } from '../../i18n.ts';
 
 export class RiskyActionModal extends Modal {
 	constructor(args: {
@@ -12,12 +13,13 @@ export class RiskyActionModal extends Modal {
 	private readonly onAccept: (error: Error | null) => void;
 
 	onOpen(): void {
+		const t = getStrings();
 		// Counteract gravity pull by moving box up for balanced composition
 		this.modalEl.addClass('mb-20');
 
-		this.contentEl.createEl('h3', { text: '确定要承担此风险吗？' });
+		this.contentEl.createEl('h3', { text: t.riskyTitle });
 		this.contentEl.createEl('p', {
-			text: '合并操作会不可逆地修改文件。请谨慎继续，仅在你已了解并接受相关风险时执行。',
+			text: t.riskyBody,
 		});
 
 		const buttonContainer = this.contentEl.createDiv(
@@ -25,11 +27,11 @@ export class RiskyActionModal extends Modal {
 		);
 
 		const deleteButton = buttonContainer.createEl('button', {
-			text: '接受风险',
+			text: t.riskyAccept,
 			cls: 'mod-warning mr-2',
 		});
 		const cancelButton = buttonContainer.createEl('button', {
-			text: '取消',
+			text: t.cancel,
 		});
 
 		cancelButton.addEventListener('click', () => this.close());

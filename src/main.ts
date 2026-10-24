@@ -18,6 +18,7 @@ import { RiskyActionModal } from './components/modals/risky_action_modal.ts';
 import { applyPalette } from './utils/palette.ts';
 import { registerInlineDiffRuntime } from './components/inline_diff.ts';
 import { configurePluginId, namespacedId } from './ids.ts';
+import { getStrings } from './i18n.ts';
 
 export default class FileDiffPlugin extends Plugin {
 	get fileDiffMergeWarningKey(): string {
@@ -26,6 +27,7 @@ export default class FileDiffPlugin extends Plugin {
 
 	override onload(): void {
 		configurePluginId(this.manifest?.id);
+		const t = getStrings();
 
 		applyPalette();
 		registerInlineDiffRuntime(this);
@@ -41,30 +43,30 @@ export default class FileDiffPlugin extends Plugin {
 
 		this.addCommand({
 			id: namespacedId('panel-on'),
-			name: '比稿：开启左右分屏对照',
+			name: t.commandPanelVertical,
 			callback: () => startSplitComparison(this.app, 'vertical'),
 		});
 		this.addCommand({
 			id: namespacedId('panel-on-horizontal'),
-			name: '比稿：开启上下分屏对照',
+			name: t.commandPanelHorizontal,
 			callback: () => startSplitComparison(this.app, 'horizontal'),
 		});
 		this.addCommand({
 			id: namespacedId('panel-off'),
-			name: '比稿：关闭分屏对照',
+			name: t.commandPanelOff,
 			callback: () => {
 				const closedCount = closeSplitComparison(this.app);
 				new Notice(
 					closedCount > 0
-						? '比稿：分屏对照已关闭'
-						: '比稿：没有由比稿创建的分屏对照窗格'
+						? t.noticePanelClosed
+						: t.noticeNoComparisonPanes
 				);
 			},
 		});
 
 		this.addCommand({
 			id: namespacedId('compare'),
-			name: '比稿：对比两篇',
+			name: t.commandCompare,
 			editorCallback: async () => {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile == null) {
@@ -86,7 +88,7 @@ export default class FileDiffPlugin extends Plugin {
 
 		this.addCommand({
 			id: namespacedId('compare-and-merge'),
-			name: '比稿：对比并合并',
+			name: t.commandCompareAndMerge,
 			editorCallback: async () => {
 				// Show warning when this option is selected for the first time
 				if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
@@ -116,7 +118,7 @@ export default class FileDiffPlugin extends Plugin {
 
 		this.addCommand({
 			id: namespacedId('find-sync-conflicts'),
-			name: '比稿：查找同步冲突并合并',
+			name: t.commandFindSyncConflicts,
 			callback: async () => {
 				// Show warning when this option is selected for the first time
 				if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {

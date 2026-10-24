@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="cover-title cover-desc">
+  <title id="cover-title">Collate — two drafts, side by side</title>
+  <desc id="cover-desc">A quiet paper-and-ink illustration. Two note sheets sit next to each other and the words that differ are tinted in both. Concept artwork, not a plugin screenshot.</desc>
+  <style>
+    .paper{fill:#fefcf6}.soft{fill:#f5f0e6}.ink{fill:#201c13}.muted{fill:#6d665d}.rule{stroke:#d8d0c2}.accent{stroke:#c24e18}.sheet{fill:#fefcf6;stroke:#d8d0c2}.del{fill:rgba(201,76,59,.30)}.add{fill:rgba(111,163,111,.32)}.serif{font-family:"IBM Plex Serif","Noto Serif SC",Georgia,serif}.mono{font-family:"IBM Plex Mono",Consolas,monospace;font-size:12px;letter-spacing:1.5px}.copy{font-family:"IBM Plex Sans","Noto Sans SC",sans-serif;font-size:15px}
+    @media(prefers-color-scheme:dark){.paper{fill:#29261f}.soft{fill:#201d18}.ink{fill:#f5f0e4}.muted{fill:#b4ad9f}.rule{stroke:#4e473b}.accent{stroke:#eda16c}.sheet{fill:#29261f;stroke:#4e473b}.del{fill:rgba(237,161,108,.34)}.add{fill:rgba(163,191,149,.32)}}
+  </style>
+  <rect width="1200" height="480" class="paper"/>
+  <text x="40" y="36" class="mono muted">OUATIS / OBSIDIAN</text>
+  <text x="1160" y="36" text-anchor="end" class="mono muted">04 / DIFFS</text>
+  <path d="M40 56H1160M40 424H1160" class="rule" fill="none"/>
+  <text x="60" y="160" class="serif ink" font-size="60">Collate</text>
+  <text x="60" y="224" class="serif ink" font-size="30">Two drafts,</text>
+  <text x="60" y="263" class="serif ink" font-size="30">side by side.</text>
+  <text x="60" y="323" class="copy muted">Same words stay quiet. Differences are marked, word by word.</text>
+  <text x="60" y="374" class="mono muted">DRAFTS / WORDS / DIFFS</text>
+  <rect x="628" y="95" width="516" height="285" rx="12" class="soft"/>
+  <rect x="672" y="130" width="212" height="215" rx="6" class="sheet"/>
+  <rect x="888" y="130" width="212" height="215" rx="6" class="sheet"/>
+  <g class="muted">
+    <rect x="694" y="158" width="150" height="4" rx="2" opacity=".55"/>
+    <rect x="694" y="184" width="118" height="4" rx="2" opacity=".55"/>
+    <rect x="694" y="210" width="150" height="4" rx="2" opacity=".55"/>
+    <rect x="694" y="236" width="84" height="4" rx="2" opacity=".55"/>
+    <rect x="694" y="262" width="132" height="4" rx="2" opacity=".55"/>
+    <rect x="694" y="288" width="64" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="158" width="150" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="184" width="118" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="210" width="150" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="236" width="84" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="262" width="132" height="4" rx="2" opacity=".55"/>
+    <rect x="910" y="288" width="64" height="4" rx="2" opacity=".55"/>
+  </g>
+  <rect x="782" y="232" width="58" height="14" rx="3" class="del"/>
+  <rect x="998" y="232" width="58" height="14" rx="3" class="add"/>
+  <path d="M858 116H916M858 116L868 108M858 116L868 124M916 116L906 108M916 116L906 124" class="accent" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="672" y="374" class="mono muted">DRAFT A</text>
+  <text x="1100" y="374" text-anchor="end" class="mono muted">DRAFT B</text>
+  <text x="40" y="453" class="mono muted">COLLATE · SIDE-BY-SIDE DIFF</text>
+  <text x="1160" y="453" text-anchor="end" class="copy muted" font-size="12">Concept illustration · not a screenshot</text>
+</svg>
