@@ -1354,6 +1354,8 @@ var MAX_PANEL_LINES = 4e3;
 var MAX_LCS_CELLS = 1e6;
 var MAX_LINE_MATCH_PAIRS = 65536;
 var MAX_TOKEN_COUNT = 800;
+var BLOCK_MATCH_THRESHOLD = 0.5;
+var MAX_BLOCK_CHARS = 2e4;
 function tokenize2(text, wordTokenizer) {
   if (wordTokenizer) {
     try {
@@ -1461,9 +1463,97 @@ function computePanelDifferences(docText, otherText, wordTokenizer) {
   if (!parsed.hunks.length) return differences;
   const changes = FileDifferences.fromParsedDiff(parsed).differences;
   const budget = { remaining: MAX_LCS_CELLS };
-  for (const change of changes) {
+  const addedBlocks = /* @__PURE__ */ new Map();
+  const removedBlocks = /* @__PURE__ */ new Map();
+  for (let index = 0; index < changes.length; index += 1) {
+    const change = changes[index];
     const oldLines = change.file1Lines || [];
     const newLines = change.file2Lines || [];
+    if (!oldLines.length && newLines.length) {
+      addedBlocks.set(index, { lines: newLines, globalStart: change.file2Start });
+    }
+    if (oldLines.length && !newLines.length) {
+      removedBlocks.set(index, { lines: oldLines, globalStart: change.file1Start });
+    }
+  }
+  const globallyUsedOld = /* @__PURE__ */ new Set();
+  const prematched = /* @__PURE__ */ new Map();
+  if (addedBlocks.size && removedBlocks.size) {
+    const candidates = [];
+    for (const [addedIndex, added] of addedBlocks) {
+      const addedText = added.lines.join("\n");
+      if (addedText.length > MAX_BLOCK_CHARS) continue;
+      for (const [removedIndex, removed] of removedBlocks) {
+        const removedText = removed.lines.join("\n");
+        if (removedText.length > MAX_BLOCK_CHARS) continue;
+        const score = lineSimilarity(removedText, addedText, wordTokenizer);
+        if (score >= BLOCK_MATCH_THRESHOLD) {
+          candidates.push({ added: addedIndex, removed: removedIndex, score });
+        }
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    const takenAdded = /* @__PURE__ */ new Set();
+    const takenRemoved = /* @__PURE__ */ new Set();
+    for (const candidate of candidates) {
+      if (takenAdded.has(candidate.added) || takenRemoved.has(candidate.removed)) continue;
+      takenAdded.add(candidate.added);
+      takenRemoved.add(candidate.removed);
+      const added = addedBlocks.get(candidate.added);
+      const removedBlock = removedBlocks.get(candidate.removed);
+      const matched = /* @__PURE__ */ new Map();
+      const used = /* @__PURE__ */ new Set();
+      for (let index = 0; index < added.lines.length; index += 1) {
+        const currentLine = String(added.lines[index] || "").replace(/\r$/, "");
+        if (!currentLine.trim()) continue;
+        let match = -1;
+        if (added.lines.length === removedBlock.lines.length || added.lines.length * removedBlock.lines.length > MAX_LINE_MATCH_PAIRS) {
+          match = index < removedBlock.lines.length ? index : -1;
+        } else {
+          let bestScore = 0;
+          for (let candidateIndex = 0; candidateIndex < removedBlock.lines.length; candidateIndex += 1) {
+            if (used.has(candidateIndex)) continue;
+            const candidateLine = String(removedBlock.lines[candidateIndex] || "").replace(/\r$/, "");
+            const score = lineSimilarity(candidateLine, currentLine, wordTokenizer);
+            if (score > bestScore) {
+              bestScore = score;
+              match = candidateIndex;
+            }
+          }
+        }
+        let ranges;
+        if (match < 0) {
+          ranges = [{ from: 0, to: currentLine.length }];
+        } else {
+          used.add(match);
+          globallyUsedOld.add(removedBlock.globalStart + match);
+          const oldLine = String(removedBlock.lines[match] || "").replace(/\r$/, "");
+          ranges = addedRanges(oldLine, currentLine, wordTokenizer, budget);
+        }
+        const nonEmptyRanges = ranges.filter((range) => range.to > range.from);
+        const removed = match >= 0 && String(removedBlock.lines[match] || "").replace(/\r$/, "") !== currentLine;
+        if (nonEmptyRanges.length || removed) {
+          matched.set(index, {
+            a: added.globalStart + index,
+            b: match < 0 ? -1 : removedBlock.globalStart + match,
+            ranges: nonEmptyRanges,
+            whole: match < 0,
+            removed
+          });
+        }
+      }
+      prematched.set(candidate.added, matched);
+    }
+  }
+  for (let changeIndex = 0; changeIndex < changes.length; changeIndex += 1) {
+    const change = changes[changeIndex];
+    const oldLines = change.file1Lines || [];
+    const newLines = change.file2Lines || [];
+    const prematchedLines = prematched.get(changeIndex);
+    if (prematchedLines) {
+      for (const difference of prematchedLines.values()) differences.push(difference);
+      continue;
+    }
     const usedOld = /* @__PURE__ */ new Set();
     for (let index = 0; index < newLines.length; index += 1) {
       const currentLine = String(newLines[index] || "").replace(/\r$/, "");
@@ -1505,7 +1595,9 @@ function computePanelDifferences(docText, otherText, wordTokenizer) {
     }
     let removedLineCount = 0;
     for (let index = 0; index < oldLines.length; index += 1) {
-      if (!usedOld.has(index)) removedLineCount += 1;
+      if (usedOld.has(index)) continue;
+      if (globallyUsedOld.has(change.file1Start + index)) continue;
+      removedLineCount += 1;
     }
     if (removedLineCount > 0) {
       const anchorLine = Math.min(
