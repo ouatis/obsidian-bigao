@@ -37,6 +37,8 @@ test('recovered source bundle registers and opens the native split commands', as
 		registerEditorExtension(extension) { editorExtensions.push(extension); }
 		registerEvent() {}
 		register() {}
+		async loadData() { return null; }
+		async saveData() {}
 	}
 	class ItemViewStub {
 		constructor(leaf) {
@@ -121,6 +123,7 @@ test('recovered source bundle registers and opens the native split commands', as
 			return compareLeaf;
 		},
 		revealLeaf() {},
+		onLayoutReady() {},
 		detachLeavesOfType(type) { detachedTypes.push(type); },
 	};
 	const app = {
@@ -365,3 +368,93 @@ test('recovered source bundle registers and opens the native split commands', as
 		'bigao-differences-view', 'bigao-panel-view',
 	]);
 });
+
+test('split comparisons persist across reloads and restore onto reopened panes', async () => {
+	const module = { exports: {} };
+	const commands = [];
+	let layoutReady = null;
+	let savedData = {
+		comparisons: [
+			{ comparePath: 'drafts/对照稿.md', sourcePath: 'current.md', direction: 'vertical' },
+			{ comparePath: 'closed.md', sourcePath: 'current.md', direction: 'vertical' },
+		],
+	};
+	class PersistPluginStub {
+		constructor(runtimeApp) { this.app = runtimeApp; }
+		addCommand(command) { commands.push(command); }
+		registerView() {}
+		registerEditorExtension() {}
+		registerEvent() {}
+		register() {}
+		async loadData() { return savedData; }
+		async saveData(data) { savedData = data; }
+	}
+	class PersistMarkdownView {}
+	const targetFile = { path: 'current.md', name: '当前稿', stat: { mtime: 2 } };
+	const compareFile = { path: 'drafts/对照稿.md', name: '对照稿.md', stat: { mtime: 1 } };
+	const sourceLeaf = { view: Object.assign(new PersistMarkdownView(), { file: targetFile }) };
+	const compareLeaf = { view: Object.assign(new PersistMarkdownView(), { file: compareFile }) };
+	const pendingTimers = new Map();
+	let nextTimerId = 0;
+	const windowApi = {
+		__bigaoSplitComparisonsV1: new Map(),
+		setTimeout(callback) { const id = ++nextTimerId; pendingTimers.set(id, callback); return id; },
+		clearTimeout(id) { pendingTimers.delete(id); },
+		setInterval() { return 2; },
+		clearInterval() {},
+	};
+	const workspace = {
+		getActiveViewOfType() { return null; },
+		on() { return {}; },
+		onLayoutReady(callback) { layoutReady = callback; },
+		getLeavesOfType(type) { return type === 'markdown' ? [sourceLeaf, compareLeaf] : []; },
+		detachLeavesOfType() {},
+	};
+	const app = {
+		workspace,
+		vault: {
+			on() { return {}; },
+			async cachedRead() { return ''; },
+			getMarkdownFiles: () => [targetFile, compareFile],
+		},
+	};
+	const obsidian = new Proxy({}, {
+		get: (_target, key) => ({
+			Plugin: PersistPluginStub,
+			MarkdownView: PersistMarkdownView,
+		})[key] ?? class {},
+	});
+	new Function(
+		'require', 'module', 'localStorage', 'document', 'app', 'console', 'window', builtBundle,
+	)(
+		(id) => id === 'obsidian' ? obsidian : {},
+		module,
+		{ getItem: () => null, setItem() {} },
+		{ body: { setAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		app,
+		{ log() {}, error() {} },
+		windowApi,
+	);
+	const plugin = new module.exports.default(app);
+	plugin.onload();
+	assert.equal(typeof layoutReady, 'function', 'restore waits for the workspace layout');
+	await layoutReady();
+	const registry = windowApi.__bigaoSplitComparisonsV1;
+	assert.equal(registry.size, 1, 'only the pair whose panes are both open is restored');
+	const [leaf, comparison] = registry.entries().next().value;
+	assert.equal(leaf, compareLeaf);
+	assert.equal(comparison.comparePath, compareFile.path);
+	assert.equal(comparison.sourcePath, targetFile.path);
+	assert.equal(comparison.sourceLeaf, sourceLeaf);
+	assert.equal(comparison.direction, 'vertical');
+	assert.equal(pendingTimers.size, 1, 'restoring schedules an inline-diff refresh');
+	assert.deepEqual(
+		savedData,
+		{ comparisons: [{ comparePath: compareFile.path, sourcePath: targetFile.path, direction: 'vertical' }] },
+		'persisting after restore prunes entries whose panes no longer exist',
+	);
+	workspace.getLeavesOfType = () => [];
+	await plugin.onunload();
+	assert.deepEqual(savedData, { comparisons: [] }, 'unloading with no open panes clears the persisted state');
+});
+

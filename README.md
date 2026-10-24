@@ -76,8 +76,8 @@ inline split highlighting caps at 4,000 lines per note; past the cap the
 highlight stays empty, which must not be read as "no differences".
 
 Editor highlighting requires the note to be in editing mode; reading mode
-is not guaranteed to look the same, and comparison tracking is not restored
-after a full workspace reload — rerun the start command when needed.
+is not guaranteed to look the same. Comparison pairs are restored
+automatically after a reload while both panes stay open.
 
 ## Development
 

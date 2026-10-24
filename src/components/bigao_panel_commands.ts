@@ -13,6 +13,13 @@ interface SplitComparison {
 	sourceLeaf: WorkspaceLeaf;
 }
 
+/** Serializable form of a tracked comparison; panes are re-resolved on restore. */
+export interface SerializedSplitComparison {
+	comparePath: string;
+	sourcePath?: string;
+	direction: SplitDirection;
+}
+
 const splitComparisonWindow = window as Window & {
 	__bigaoSplitComparisonsV1?: Map<WorkspaceLeaf, SplitComparison>;
 };
@@ -21,6 +28,75 @@ const splitComparisons =
 		WorkspaceLeaf,
 		SplitComparison
 	>());
+
+function leafShowing(
+	leaves: readonly WorkspaceLeaf[],
+	path: string,
+	exclude?: WorkspaceLeaf
+): WorkspaceLeaf | undefined {
+	return leaves.find(
+		(leaf) =>
+			leaf !== exclude &&
+			leaf.view instanceof MarkdownView &&
+			leaf.view.file?.path === path
+	);
+}
+
+/**
+ * Drops entries whose pane was closed or repurposed and returns what is worth
+ * persisting: one entry per comparison note path.
+ */
+export function snapshotComparisons(app: App): SerializedSplitComparison[] {
+	const markdownLeaves = app.workspace.getLeavesOfType('markdown');
+	const snapshot: SerializedSplitComparison[] = [];
+	const seenPaths = new Set<string>();
+	for (const [leaf, comparison] of splitComparisons) {
+		const stillTracked =
+			markdownLeaves.includes(leaf) &&
+			leaf.view instanceof MarkdownView &&
+			leaf.view.file?.path === comparison.comparePath;
+		if (!stillTracked) {
+			splitComparisons.delete(leaf);
+			continue;
+		}
+		if (seenPaths.has(comparison.comparePath)) continue;
+		seenPaths.add(comparison.comparePath);
+		snapshot.push({
+			comparePath: comparison.comparePath,
+			sourcePath: comparison.sourcePath,
+			direction: comparison.direction,
+		});
+	}
+	return snapshot;
+}
+
+/** Re-registers persisted comparisons onto panes that still show both notes. */
+export function restoreComparisons(
+	app: App,
+	saved: readonly SerializedSplitComparison[]
+): number {
+	const leaves = app.workspace.getLeavesOfType('markdown');
+	const trackedPaths = new Set(
+		[...splitComparisons.values()].map((comparison) => comparison.comparePath)
+	);
+	let restored = 0;
+	for (const entry of saved) {
+		if (!entry.sourcePath || trackedPaths.has(entry.comparePath)) continue;
+		const compareLeaf = leafShowing(leaves, entry.comparePath);
+		if (!compareLeaf) continue;
+		const sourceLeaf = leafShowing(leaves, entry.sourcePath, compareLeaf);
+		if (!sourceLeaf) continue;
+		splitComparisons.set(compareLeaf, {
+			comparePath: entry.comparePath,
+			sourcePath: entry.sourcePath,
+			direction: entry.direction,
+			sourceLeaf,
+		});
+		trackedPaths.add(entry.comparePath);
+		restored += 1;
+	}
+	return restored;
+}
 
 export function closeSplitComparison(app: App): number {
 	const workspace = app.workspace;

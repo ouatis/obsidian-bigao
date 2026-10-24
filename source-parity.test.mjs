@@ -73,6 +73,8 @@ function loadRuntime(kind, settings = {}) {
 		registerEvent() {}
 		register() {}
 		registerEditorExtension() { assert.fail('must not register a foreign CodeMirror extension'); }
+		async loadData() { return null; }
+		async saveData() {}
 	}
 	class ItemViewStub {
 		constructor(leaf) { this.leaf = leaf; this.app = leaf.app; this.contentEl = new ElementStub(); }
@@ -86,7 +88,7 @@ function loadRuntime(kind, settings = {}) {
 		createElement: () => new ElementStub(),
 	};
 	const app = {
-		workspace: { on() {}, getLeavesOfType: () => [], detachLeavesOfType() {} },
+		workspace: { on() {}, onLayoutReady() {}, getLeavesOfType: () => [], detachLeavesOfType() {} },
 		vault: { on() {}, getMarkdownFiles: () => [], adapter: { getFullPath: (path) => path } },
 	};
 	const module = { exports: {} };

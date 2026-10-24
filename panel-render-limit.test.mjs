@@ -184,6 +184,7 @@ test("bundle registers and runs both native split comparison commands", async ()
         return compareLeaf;
       },
       revealLeaf(leaf) { splitCalls.push(["reveal", leaf]); },
+      onLayoutReady() {},
       on() { return {}; },
     },
   };
@@ -199,6 +200,8 @@ test("bundle registers and runs both native split comparison commands", async ()
     registerView(type, factory) { views.push({ type, factory }); }
     registerEvent() {}
     register() {}
+    async loadData() { return null; }
+    async saveData() {}
   }
   class SuggestModalStub {
     constructor(app) { this.app = app; openedModals.push(this); }

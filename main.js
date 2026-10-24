@@ -2325,6 +2325,54 @@ function registerInlineDiffRuntime(plugin) {
 // src/components/bigao_panel_commands.ts
 var splitComparisonWindow = window;
 var splitComparisons = splitComparisonWindow.__bigaoSplitComparisonsV1 ??= /* @__PURE__ */ new Map();
+function leafShowing(leaves, path, exclude) {
+  return leaves.find(
+    (leaf) => leaf !== exclude && leaf.view instanceof import_obsidian6.MarkdownView && leaf.view.file?.path === path
+  );
+}
+function snapshotComparisons(app) {
+  const markdownLeaves = app.workspace.getLeavesOfType("markdown");
+  const snapshot = [];
+  const seenPaths = /* @__PURE__ */ new Set();
+  for (const [leaf, comparison] of splitComparisons) {
+    const stillTracked = markdownLeaves.includes(leaf) && leaf.view instanceof import_obsidian6.MarkdownView && leaf.view.file?.path === comparison.comparePath;
+    if (!stillTracked) {
+      splitComparisons.delete(leaf);
+      continue;
+    }
+    if (seenPaths.has(comparison.comparePath)) continue;
+    seenPaths.add(comparison.comparePath);
+    snapshot.push({
+      comparePath: comparison.comparePath,
+      sourcePath: comparison.sourcePath,
+      direction: comparison.direction
+    });
+  }
+  return snapshot;
+}
+function restoreComparisons(app, saved) {
+  const leaves = app.workspace.getLeavesOfType("markdown");
+  const trackedPaths = new Set(
+    [...splitComparisons.values()].map((comparison) => comparison.comparePath)
+  );
+  let restored = 0;
+  for (const entry of saved) {
+    if (!entry.sourcePath || trackedPaths.has(entry.comparePath)) continue;
+    const compareLeaf = leafShowing(leaves, entry.comparePath);
+    if (!compareLeaf) continue;
+    const sourceLeaf = leafShowing(leaves, entry.sourcePath, compareLeaf);
+    if (!sourceLeaf) continue;
+    splitComparisons.set(compareLeaf, {
+      comparePath: entry.comparePath,
+      sourcePath: entry.sourcePath,
+      direction: entry.direction,
+      sourceLeaf
+    });
+    trackedPaths.add(entry.comparePath);
+    restored += 1;
+  }
+  return restored;
+}
 function closeSplitComparison(app) {
   const workspace = app.workspace;
   const markdownLeaves = new Set(workspace.getLeavesOfType("markdown"));
@@ -2473,6 +2521,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
     const t = getStrings();
     applyPalette();
     registerInlineDiffRuntime(this);
+    this.app.workspace.onLayoutReady(() => void this.restoreSplitComparisons());
     this.registerView(
       differencesViewType(),
       (leaf) => new DifferencesView(leaf)
@@ -2484,21 +2533,30 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
     this.addCommand({
       id: namespacedId("panel-on"),
       name: t.commandPanelVertical,
-      callback: () => startSplitComparison(this.app, "vertical")
+      callback: async () => {
+        const opened = await startSplitComparison(this.app, "vertical");
+        await this.saveSplitComparisons();
+        return opened;
+      }
     });
     this.addCommand({
       id: namespacedId("panel-on-horizontal"),
       name: t.commandPanelHorizontal,
-      callback: () => startSplitComparison(this.app, "horizontal")
+      callback: async () => {
+        const opened = await startSplitComparison(this.app, "horizontal");
+        await this.saveSplitComparisons();
+        return opened;
+      }
     });
     this.addCommand({
       id: namespacedId("panel-off"),
       name: t.commandPanelOff,
-      callback: () => {
+      callback: async () => {
         const closedCount = closeSplitComparison(this.app);
         new import_obsidian8.Notice(
           closedCount > 0 ? t.noticePanelClosed : t.noticeNoComparisonPanes
         );
+        await this.saveSplitComparisons();
       }
     });
     this.addCommand({
@@ -2574,8 +2632,30 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
     });
   }
   async onunload() {
+    await this.saveSplitComparisons();
     this.app.workspace.detachLeavesOfType(differencesViewType());
     this.app.workspace.detachLeavesOfType(panelViewType());
+  }
+  /** Re-registers persisted pairs whose two panes are both still open. */
+  async restoreSplitComparisons() {
+    try {
+      const state = await this.loadData();
+      const saved = state?.comparisons;
+      if (!saved?.length) return;
+      const restored = restoreComparisons(this.app, saved);
+      if (restored > 0) scheduleInlineDiffRefresh(this.app, 0);
+      await this.saveSplitComparisons();
+    } catch (error) {
+      console.error("比稿：恢复分屏对照失败", error);
+    }
+  }
+  /** Persists the live comparisons; closed or repurposed panes are pruned. */
+  async saveSplitComparisons() {
+    try {
+      await this.saveData({ comparisons: snapshotComparisons(this.app) });
+    } catch (error) {
+      console.error("比稿：保存分屏对照失败", error);
+    }
   }
   getFileToCompare(activeFile) {
     return pickCompareFile(this.app, activeFile);

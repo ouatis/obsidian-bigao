@@ -11,12 +11,15 @@ import {
 } from './components/bigao_panel_view.ts';
 import {
 	closeSplitComparison,
+	restoreComparisons,
+	SerializedSplitComparison,
+	snapshotComparisons,
 	startSplitComparison,
 } from './components/bigao_panel_commands.ts';
 import { pickCompareFile } from './components/bigao_compare_file_modal.ts';
 import { RiskyActionModal } from './components/modals/risky_action_modal.ts';
 import { applyPalette } from './utils/palette.ts';
-import { registerInlineDiffRuntime } from './components/inline_diff.ts';
+import { registerInlineDiffRuntime, scheduleInlineDiffRefresh } from './components/inline_diff.ts';
 import { configurePluginId, namespacedId } from './ids.ts';
 import { getStrings } from './i18n.ts';
 
@@ -32,6 +35,11 @@ export default class FileDiffPlugin extends Plugin {
 		applyPalette();
 		registerInlineDiffRuntime(this);
 
+		// Comparisons persist in plugin data; after a restart the layout is
+		// rebuilt onto fresh leaf objects, so tracked pairs are re-resolved by
+		// note path once the workspace exists.
+		this.app.workspace.onLayoutReady(() => void this.restoreSplitComparisons());
+
 		this.registerView(
 			differencesViewType(),
 			(leaf) => new DifferencesView(leaf)
@@ -44,23 +52,32 @@ export default class FileDiffPlugin extends Plugin {
 		this.addCommand({
 			id: namespacedId('panel-on'),
 			name: t.commandPanelVertical,
-			callback: () => startSplitComparison(this.app, 'vertical'),
+			callback: async () => {
+				const opened = await startSplitComparison(this.app, 'vertical');
+				await this.saveSplitComparisons();
+				return opened;
+			},
 		});
 		this.addCommand({
 			id: namespacedId('panel-on-horizontal'),
 			name: t.commandPanelHorizontal,
-			callback: () => startSplitComparison(this.app, 'horizontal'),
+			callback: async () => {
+				const opened = await startSplitComparison(this.app, 'horizontal');
+				await this.saveSplitComparisons();
+				return opened;
+			},
 		});
 		this.addCommand({
 			id: namespacedId('panel-off'),
 			name: t.commandPanelOff,
-			callback: () => {
+			callback: async () => {
 				const closedCount = closeSplitComparison(this.app);
 				new Notice(
 					closedCount > 0
 						? t.noticePanelClosed
 						: t.noticeNoComparisonPanes
 				);
+				await this.saveSplitComparisons();
 			},
 		});
 
@@ -151,8 +168,34 @@ export default class FileDiffPlugin extends Plugin {
 	}
 
 	override async onunload(): Promise<void> {
+		await this.saveSplitComparisons();
 		this.app.workspace.detachLeavesOfType(differencesViewType());
 		this.app.workspace.detachLeavesOfType(panelViewType());
+	}
+
+	/** Re-registers persisted pairs whose two panes are both still open. */
+	private async restoreSplitComparisons(): Promise<void> {
+		try {
+			const state = (await this.loadData()) as
+				| { comparisons?: SerializedSplitComparison[] }
+				| null;
+			const saved = state?.comparisons;
+			if (!saved?.length) return;
+			const restored = restoreComparisons(this.app, saved);
+			if (restored > 0) scheduleInlineDiffRefresh(this.app, 0);
+			await this.saveSplitComparisons();
+		} catch (error) {
+			console.error('比稿：恢复分屏对照失败', error);
+		}
+	}
+
+	/** Persists the live comparisons; closed or repurposed panes are pruned. */
+	async saveSplitComparisons(): Promise<void> {
+		try {
+			await this.saveData({ comparisons: snapshotComparisons(this.app) });
+		} catch (error) {
+			console.error('比稿：保存分屏对照失败', error);
+		}
 	}
 
 	private getFileToCompare(activeFile: TFile): Promise<TFile | null> {
