@@ -37,8 +37,8 @@ colors and fonts follow your Obsidian theme. English and Simplified Chinese
 are available.
 
 > [!NOTE]
-> Collate is an early experimental build, verified on Windows desktop
-> Obsidian only, and not yet submitted to the community plugin directory.
+> Collate runs on desktop Obsidian (verified on Windows); mobile is not
+> supported.
 
 ## Install
 
@@ -77,7 +77,8 @@ highlight stays empty, which must not be read as "no differences".
 
 Editor highlighting requires the note to be in editing mode; reading mode
 is not guaranteed to look the same. Comparison pairs are restored
-automatically after a reload while both panes stay open.
+automatically after a reload while both panes stay open. Collate is a
+desktop plugin; it is not tested on mobile.
 
 ## Development
 

@@ -23,7 +23,7 @@ _两份稿子，并排放着。_
 比稿基于 Till Friebe 的 [obsidian-file-diff](https://github.com/friebetill/obsidian-file-diff)（MIT）修改，现由 SigiL 维护，与[小台灯](https://github.com/ouatis/obsidian-desklamp)、[技能接线台](https://github.com/ouatis/obsidian-skill-switchboard)、[Scriptorium](https://github.com/ouatis/obsidian-scriptorium) 同属 ouatis 的 Obsidian 家族：安静的面板与细线共享同一种节奏；配色与字体跟随你的 Obsidian 主题，提供中英文界面。
 
 > [!NOTE]
-> 比稿是早期实验版本，目前只在 Windows 桌面版 Obsidian 完成实际验证，尚未提交社区插件列表。
+> 比稿运行于桌面端 Obsidian（已在 Windows 实测）；不支持移动端。
 
 ## 安装
 
@@ -46,7 +46,7 @@ _两份稿子，并排放着。_
 
 全文差异视图每篇最多 4,000 行、1,000,000 字符，差异计算上限为 2,000 次编辑或 500 毫秒——超限会显示明确提示，不会误报「无差异」。分屏行内高亮同样以每篇 4,000 行为上限，超限后高亮保持为空，不应据此判断两篇相同。
 
-编辑器内高亮需要笔记处于编辑模式，不保证阅读模式显示同样效果；工作区重载后，只要两个对照窗格仍打开，对照关系与行内高亮会自动恢复。
+编辑器内高亮需要笔记处于编辑模式，不保证阅读模式显示同样效果；工作区重载后，只要两个对照窗格仍打开，对照关系与行内高亮会自动恢复。比稿为桌面端插件，不支持移动端。
 
 ## 开发与验证
 
