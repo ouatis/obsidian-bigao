@@ -816,7 +816,7 @@ var EN = {
   riskyBody: "Merging changes files irreversibly. Continue only if you understand and accept the risks.",
   riskyAccept: "I accept the risk",
   deleteTitle: (name) => `Delete "${name}"?`,
-  deleteBody: (keptName, removedName) => `"${keptName}" and "${removedName}" have identical content. Delete this duplicate? This cannot be undone.`,
+  deleteBody: (keptName, removedName) => `"${keptName}" and "${removedName}" have identical content. Delete this duplicate? The file will be moved to your trash.`,
   deleteButton: "Delete",
   cancel: "Cancel",
   movedOutLabel: (line) => `↔ moved to comparison line ${line}`,
@@ -868,7 +868,7 @@ var ZH_CN = {
   riskyBody: "合并操作会不可逆地修改文件。请谨慎继续，仅在你已了解并接受相关风险时执行。",
   riskyAccept: "接受风险",
   deleteTitle: (name) => `删除「${name}」？`,
-  deleteBody: (keptName, removedName) => `「${keptName}」与「${removedName}」的内容完全相同。要删除这个重复文件吗？请注意，此操作不可撤销。`,
+  deleteBody: (keptName, removedName) => `「${keptName}」与「${removedName}」的内容完全相同。要删除这个重复文件吗？文件会移入系统回收站。`,
   deleteButton: "删除",
   cancel: "取消",
   movedOutLabel: (line) => `↔ 移至对照稿第 ${line} 行`,
@@ -968,42 +968,58 @@ var ActionLine = class {
     if (hasPlusLines && hasMinusLines) {
       new ActionLineButton({
         text: t.keepTop,
-        onClick: (e) => this.acceptTopClick(e, this.difference)
+        onClick: (e) => {
+          void this.acceptTopClick(e, this.difference);
+        }
       }).build(actionLine);
       ActionLineDivider.build(actionLine);
       new ActionLineButton({
         text: t.keepBottom,
-        onClick: (e) => this.acceptBottomClick(e, this.difference)
+        onClick: (e) => {
+          void this.acceptBottomClick(e, this.difference);
+        }
       }).build(actionLine);
       ActionLineDivider.build(actionLine);
       new ActionLineButton({
         text: t.keepAll,
-        onClick: (e) => this.acceptAllClick(e, this.difference)
+        onClick: (e) => {
+          void this.acceptAllClick(e, this.difference);
+        }
       }).build(actionLine);
       ActionLineDivider.build(actionLine);
       new ActionLineButton({
         text: t.discardAll,
-        onClick: (e) => this.acceptNoneClick(e, this.difference)
+        onClick: (e) => {
+          void this.acceptNoneClick(e, this.difference);
+        }
       }).build(actionLine);
     } else if (hasMinusLines) {
       new ActionLineButton({
         text: t.keepVersionOf(this.file1.name),
-        onClick: (e) => this.insertFile1Difference(e, this.difference)
+        onClick: (e) => {
+          void this.insertFile1Difference(e, this.difference);
+        }
       }).build(actionLine);
       ActionLineDivider.build(actionLine);
       new ActionLineButton({
         text: t.deleteBlock,
-        onClick: (e) => this.discardFile1Difference(e, this.difference)
+        onClick: (e) => {
+          void this.discardFile1Difference(e, this.difference);
+        }
       }).build(actionLine);
     } else if (hasPlusLines) {
       new ActionLineButton({
         text: t.keepVersionOf(this.file2.name),
-        onClick: (e) => this.insertFile2Difference(e, this.difference)
+        onClick: (e) => {
+          void this.insertFile2Difference(e, this.difference);
+        }
       }).build(actionLine);
       ActionLineDivider.build(actionLine);
       new ActionLineButton({
         text: t.deleteBlock,
-        onClick: (e) => this.discardFile2Difference(e, this.difference)
+        onClick: (e) => {
+          void this.discardFile2Difference(e, this.difference);
+        }
       }).build(actionLine);
     }
   }
@@ -1148,7 +1164,7 @@ var DeleteFileModal = class extends import_obsidian2.Modal {
     cancelButton.addEventListener("click", () => this.close());
   }
   handleDeleteClick() {
-    this.app.vault.delete(this.file2);
+    void this.app.fileManager.trashFile(this.file2);
     this.close();
     this.onDone(null);
   }
@@ -1206,19 +1222,19 @@ var DifferencesView = class extends import_obsidian3.ItemView {
   }
   async setState(state, result) {
     this.clearEditorUpdateTimer();
-    super.setState(state, result);
+    await super.setState(state, result);
     this.state = state;
     if (await this.updateState()) this.build();
   }
-  async onunload() {
+  onunload() {
     this.updateRevision += 1;
     this.clearEditorUpdateTimer();
-    this.state?.continueCallback?.(false);
+    void this.state?.continueCallback?.(false);
   }
   async onClose() {
     this.updateRevision += 1;
     this.clearEditorUpdateTimer();
-    this.state?.continueCallback?.(false);
+    void this.state?.continueCallback?.(false);
   }
   scheduleEditorUpdate() {
     this.updateRevision += 1;
@@ -1319,7 +1335,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
     this.scrollToFirstDifference();
     if (this.fileDifferences.differences.length === 0 && this.state.showMergeOption && !this.wasDeleteModalShown) {
       this.wasDeleteModalShown = true;
-      this.showDeleteModal();
+      void this.showDeleteModal();
     }
   }
   buildLines(container) {
@@ -1370,8 +1386,10 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         file2: this.state.file2,
         file1Content: this.file1Content,
         file2Content: this.file2Content,
-        triggerRebuild: async () => {
-          if (await this.updateState()) this.build();
+        triggerRebuild: () => {
+          void (async () => {
+            if (await this.updateState()) this.build();
+          })();
         }
       }).build(container);
     }
@@ -1403,7 +1421,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
     }
   }
   buildDiffLine(line1, line2, charClass) {
-    const fragment = document.createElement("div");
+    const fragment = createEl("div");
     if (line1 != void 0 && line1.length === 0) {
       fragment.textContent = preventEmptyString(line1);
     } else if (line1 != void 0 && line2 != void 0) {
@@ -1412,7 +1430,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         if (difference.removed) {
           continue;
         }
-        const span = document.createElement("span");
+        const span = createEl("span");
         span.textContent = preventEmptyString(difference.value);
         if (difference.added) {
           span.classList.add(charClass);
@@ -1420,7 +1438,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         fragment.appendChild(span);
       }
     } else if (line1 != void 0 && line2 == void 0) {
-      const span = document.createElement("span");
+      const span = createEl("span");
       span.textContent = preventEmptyString(line1);
       span.classList.add(charClass);
       fragment.appendChild(span);
@@ -1451,7 +1469,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
           if (e) {
             return reject(e);
           }
-          this.state.continueCallback?.(true);
+          void this.state.continueCallback?.(true);
           this.leaf.detach();
           return resolve();
         }
@@ -2093,7 +2111,7 @@ function getOverlay(editor, view) {
   let overlay = inlineOverlays.get(editor);
   if (!overlay || overlay.parentElement !== view.scrollDOM) {
     overlay?.remove();
-    overlay = document.createElement("div");
+    overlay = createEl("div");
     overlay.className = "bigao-inline-overlay";
     overlay.setAttribute("aria-hidden", "true");
     view.scrollDOM.appendChild(overlay);
@@ -2132,7 +2150,7 @@ function renderInlineOverlay(editor) {
       }
       const line = lineElement?.getBoundingClientRect();
       if (!line || line.height <= 0) continue;
-      const marker = document.createElement("span");
+      const marker = createEl("span");
       marker.className = `bigao-inline-line-marker ${range.className}`;
       const scrollerRect = view.scrollDOM.getBoundingClientRect();
       marker.style.left = `${Math.max(0, line.left - scrollerRect.left + view.scrollDOM.scrollLeft - 6)}px`;
@@ -2148,7 +2166,7 @@ function renderInlineOverlay(editor) {
       domRange.setStart(from.node, from.offset);
       domRange.setEnd(to.node, to.offset);
       for (const rect of Array.from(domRange.getClientRects())) {
-        const marker = document.createElement("span");
+        const marker = createEl("span");
         marker.className = range.className;
         const scrollerRect = view.scrollDOM.getBoundingClientRect();
         marker.style.left = `${rect.left - scrollerRect.left + view.scrollDOM.scrollLeft}px`;
@@ -2157,7 +2175,6 @@ function renderInlineOverlay(editor) {
         marker.style.height = `${rect.height}px`;
         fragment.appendChild(marker);
       }
-      domRange.detach();
     } catch {
     }
   }
@@ -2417,7 +2434,7 @@ async function startSplitComparison(app, direction, sourceView) {
         }
         comparison.comparePath = compareFile.path;
         comparison.sourcePath = targetFile.path;
-        workspace.revealLeaf(existingLeaf);
+        await workspace.revealLeaf(existingLeaf);
         scheduleInlineDiffRefresh(app);
         new import_obsidian6.Notice(
           direction === "vertical" ? t.noticeOpenedVertical(compareFile.name) : t.noticeOpenedHorizontal(compareFile.name)
@@ -2438,7 +2455,7 @@ async function startSplitComparison(app, direction, sourceView) {
       if (!(leaf.view instanceof import_obsidian6.MarkdownView) || leaf.view.file?.path !== compareFile.path) {
         throw new Error(t.errorPaneNotLoaded(compareFile.name));
       }
-      workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
       splitComparisons.set(leaf, {
         comparePath: compareFile.path,
         sourcePath: targetFile.path,
@@ -2571,7 +2588,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
         if (compareFile == null) {
           return;
         }
-        this.openDifferencesView({
+        void this.openDifferencesView({
           file1: activeFile,
           file2: compareFile,
           showMergeOption: false
@@ -2582,9 +2599,9 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
       id: namespacedId("compare-and-merge"),
       name: t.commandCompareAndMerge,
       editorCallback: async () => {
-        if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+        if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
           await this.showRiskyActionModal();
-          if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+          if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
             return;
           }
         }
@@ -2596,7 +2613,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
         if (compareFile == null) {
           return;
         }
-        this.openDifferencesView({
+        void this.openDifferencesView({
           file1: activeFile,
           file2: compareFile,
           showMergeOption: true
@@ -2607,16 +2624,16 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
       id: namespacedId("find-sync-conflicts"),
       name: t.commandFindSyncConflicts,
       callback: async () => {
-        if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+        if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
           await this.showRiskyActionModal();
-          if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+          if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
             return;
           }
         }
         const syncConflicts = this.findSyncConflicts();
-        for await (const syncConflict of syncConflicts) {
+        for (const syncConflict of syncConflicts) {
           const continuePromise = new Promise((resolve) => {
-            this.openDifferencesView({
+            void this.openDifferencesView({
               file1: syncConflict.originalFile,
               file2: syncConflict.syncConflictFile,
               showMergeOption: true,
@@ -2631,10 +2648,8 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
       }
     });
   }
-  async onunload() {
-    await this.saveSplitComparisons();
-    this.app.workspace.detachLeavesOfType(differencesViewType());
-    this.app.workspace.detachLeavesOfType(panelViewType());
+  onunload() {
+    void this.saveSplitComparisons();
   }
   /** Re-registers persisted pairs whose two panes are both still open. */
   async restoreSplitComparisons() {
@@ -2664,17 +2679,16 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
     return new Promise((resolve, reject) => {
       new RiskyActionModal({
         app: this.app,
-        onAccept: async (e) => {
-          if (e) {
-            reject(e);
-          } else {
-            localStorage.setItem(
-              this.fileDiffMergeWarningKey,
-              "true"
-            );
-            await sleep(50);
-            resolve();
-          }
+        onAccept: (e) => {
+          void (async () => {
+            if (e) {
+              reject(e);
+            } else {
+              this.app.saveLocalStorage(this.fileDiffMergeWarningKey, true);
+              await sleep(50);
+              resolve();
+            }
+          })();
         }
       }).open();
     });
@@ -2687,7 +2701,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
       active: true,
       state
     });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
   findSyncConflicts() {
     const syncConflicts = [];

@@ -58,7 +58,7 @@ export const EN: Strings = {
 	deleteTitle: (name) => `Delete "${name}"?`,
 	deleteBody: (keptName, removedName) =>
 		`"${keptName}" and "${removedName}" have identical content. ` +
-		`Delete this duplicate? This cannot be undone.`,
+		`Delete this duplicate? The file will be moved to your trash.`,
 	deleteButton: 'Delete',
 	cancel: 'Cancel',
 	movedOutLabel: (line) => `↔ moved to comparison line ${line}`,

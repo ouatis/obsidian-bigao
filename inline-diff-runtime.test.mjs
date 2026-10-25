@@ -140,13 +140,14 @@ test('renders word highlights in both visible Markdown panes without changing ei
 		},
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'window', 'document', 'console', 'Node', helperBundle)(
+	new Function('require', 'module', 'window', 'document', 'console', 'Node', 'createEl', helperBundle)(
 		(id) => id === 'obsidian' ? {} : {},
 		module,
 		windowApi,
 		documentApi,
 		{ error(...args) { throw new Error(String(args[0])); } },
 		{ ELEMENT_NODE: 1 },
+		(tag) => documentApi.createElement(tag),
 	);
 	const listeners = [];
 	const app = {

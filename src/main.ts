@@ -95,7 +95,7 @@ export default class FileDiffPlugin extends Plugin {
 					return;
 				}
 
-				this.openDifferencesView({
+				void this.openDifferencesView({
 					file1: activeFile,
 					file2: compareFile,
 					showMergeOption: false,
@@ -108,9 +108,9 @@ export default class FileDiffPlugin extends Plugin {
 			name: t.commandCompareAndMerge,
 			editorCallback: async () => {
 				// Show warning when this option is selected for the first time
-				if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+				if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
 					await this.showRiskyActionModal();
-					if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+					if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
 						return;
 					}
 				}
@@ -125,7 +125,7 @@ export default class FileDiffPlugin extends Plugin {
 					return;
 				}
 
-				this.openDifferencesView({
+				void this.openDifferencesView({
 					file1: activeFile,
 					file2: compareFile,
 					showMergeOption: true,
@@ -138,18 +138,18 @@ export default class FileDiffPlugin extends Plugin {
 			name: t.commandFindSyncConflicts,
 			callback: async () => {
 				// Show warning when this option is selected for the first time
-				if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+				if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
 					await this.showRiskyActionModal();
-					if (!localStorage.getItem(this.fileDiffMergeWarningKey)) {
+					if (!this.app.loadLocalStorage(this.fileDiffMergeWarningKey)) {
 						return;
 					}
 				}
 
 				const syncConflicts = this.findSyncConflicts();
 
-				for await (const syncConflict of syncConflicts) {
+				for (const syncConflict of syncConflicts) {
 					const continuePromise = new Promise<boolean>((resolve) => {
-						this.openDifferencesView({
+						void this.openDifferencesView({
 							file1: syncConflict.originalFile,
 							file2: syncConflict.syncConflictFile,
 							showMergeOption: true,
@@ -167,10 +167,10 @@ export default class FileDiffPlugin extends Plugin {
 		});
 	}
 
-	override async onunload(): Promise<void> {
-		await this.saveSplitComparisons();
-		this.app.workspace.detachLeavesOfType(differencesViewType());
-		this.app.workspace.detachLeavesOfType(panelViewType());
+	override onunload(): void {
+		// Do not detach view leaves here: resetting leaves on unload moves a
+		// user-relocated pane back to its default position on the next load.
+		void this.saveSplitComparisons();
 	}
 
 	/** Re-registers persisted pairs whose two panes are both still open. */
@@ -206,19 +206,18 @@ export default class FileDiffPlugin extends Plugin {
 		return new Promise((resolve, reject) => {
 			new RiskyActionModal({
 				app: this.app,
-				onAccept: async (e: Error | null) => {
-					if (e) {
-						reject(e);
-					} else {
-						localStorage.setItem(
-							this.fileDiffMergeWarningKey,
-							'true'
-						);
-						// Wait for the set item dispatch event to be processed
-						await sleep(50);
+				onAccept: (e: Error | null) => {
+					void (async () => {
+						if (e) {
+							reject(e);
+						} else {
+							this.app.saveLocalStorage(this.fileDiffMergeWarningKey, true);
+							// Wait for the storage write to settle before continuing
+							await sleep(50);
 
-						resolve();
-					}
+							resolve();
+						}
+					})();
 				},
 			}).open();
 		});
@@ -235,7 +234,7 @@ export default class FileDiffPlugin extends Plugin {
 			active: true,
 			state: state as unknown as Record<string, unknown>,
 		});
-		this.app.workspace.revealLeaf(leaf);
+		await this.app.workspace.revealLeaf(leaf);
 	}
 
 	findSyncConflicts(): { originalFile: TFile; syncConflictFile: TFile }[] {

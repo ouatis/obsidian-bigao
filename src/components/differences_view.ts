@@ -101,22 +101,22 @@ export class DifferencesView extends ItemView {
 		result: ViewStateResult
 	): Promise<void> {
 		this.clearEditorUpdateTimer();
-		super.setState(state, result);
+		await super.setState(state, result);
 		this.state = state;
 
 		if (await this.updateState()) this.build();
 	}
 
-	async onunload(): Promise<void> {
+	onunload(): void {
 		this.updateRevision += 1;
 		this.clearEditorUpdateTimer();
-		this.state?.continueCallback?.(false);
+		void this.state?.continueCallback?.(false);
 	}
 
 	override async onClose(): Promise<void> {
 		this.updateRevision += 1;
 		this.clearEditorUpdateTimer();
-		this.state?.continueCallback?.(false);
+		void this.state?.continueCallback?.(false);
 	}
 
 	private scheduleEditorUpdate(): void {
@@ -241,7 +241,7 @@ export class DifferencesView extends ItemView {
 			!this.wasDeleteModalShown
 		) {
 			this.wasDeleteModalShown = true;
-			this.showDeleteModal();
+			void this.showDeleteModal();
 		}
 	}
 
@@ -313,8 +313,10 @@ export class DifferencesView extends ItemView {
 				file2: this.state.file2,
 				file1Content: this.file1Content,
 				file2Content: this.file2Content,
-				triggerRebuild: async (): Promise<void> => {
-					if (await this.updateState()) this.build();
+				triggerRebuild: () => {
+					void (async () => {
+						if (await this.updateState()) this.build();
+					})();
 				},
 			}).build(container);
 		}
@@ -359,7 +361,7 @@ export class DifferencesView extends ItemView {
 	}
 
 	private buildDiffLine(line1: string, line2: string, charClass: string) {
-		const fragment = document.createElement('div');
+		const fragment = createEl('div');
 
 		if (line1 != undefined && line1.length === 0) {
 			fragment.textContent = preventEmptyString(line1);
@@ -371,7 +373,7 @@ export class DifferencesView extends ItemView {
 					continue;
 				}
 
-				const span = document.createElement('span');
+				const span = createEl('span');
 				// Necessary to give the line a height when it's empty.
 				span.textContent = preventEmptyString(difference.value);
 				if (difference.added) {
@@ -380,7 +382,7 @@ export class DifferencesView extends ItemView {
 				fragment.appendChild(span);
 			}
 		} else if(line1 != undefined && line2 == undefined) {
-			const span = document.createElement('span');
+			const span = createEl('span');
 			// Necessary to give the line a height when it's empty.
 			span.textContent = preventEmptyString(line1);
 			span.classList.add(charClass);
@@ -422,7 +424,7 @@ export class DifferencesView extends ItemView {
 					if (e) {
 						return reject(e);
 					}
-					this.state.continueCallback?.(true);
+					void this.state.continueCallback?.(true);
 					this.leaf.detach();
 					return resolve();
 				},

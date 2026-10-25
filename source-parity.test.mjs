@@ -92,7 +92,7 @@ function loadRuntime(kind, settings = {}) {
 		vault: { on() {}, getMarkdownFiles: () => [], adapter: { getFullPath: (path) => path } },
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'localStorage', 'document', 'window', 'console',
+	new Function('require', 'module', 'localStorage', 'document', 'window', 'console', 'createEl',
 		kind === 'installed' ? installed + installedExports : candidate)(
 		(id) => id === 'obsidian' ? obsidian : {
 			registerInlineDiffRuntime() {}, scheduleInlineDiffRefresh() {}, clearInlineDiffForLeaves() {},
@@ -102,6 +102,7 @@ function loadRuntime(kind, settings = {}) {
 		document,
 		{ setTimeout: () => 1, clearTimeout() {}, setInterval: () => 2, clearInterval() {} },
 		{ log() {}, error: (...args) => errors.push(args) },
+		(tag) => document.createElement(tag),
 	);
 	return { api: module.exports, commands, views, app, attributes, errors };
 }

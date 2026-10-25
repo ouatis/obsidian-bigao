@@ -363,10 +363,7 @@ test('recovered source bundle registers and opens the native split commands', as
 		.find((candidate) => candidate.id === 'bigao-panel-off').callback();
 	assert.deepEqual(detachedLeaves, [compareLeaf], 'close should detach the comparison pane created by the plugin');
 	await reloadedPlugin.onunload();
-	assert.deepEqual(detachedTypes, [
-		'bigao-differences-view', 'bigao-panel-view',
-		'bigao-differences-view', 'bigao-panel-view',
-	]);
+	assert.deepEqual(detachedTypes, [], 'onunload must not detach view leaves');
 });
 
 test('split comparisons persist across reloads and restore onto reopened panes', async () => {

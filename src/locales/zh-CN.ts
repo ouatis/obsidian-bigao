@@ -56,7 +56,7 @@ export const ZH_CN: Strings = {
 	deleteTitle: (name) => `删除「${name}」？`,
 	deleteBody: (keptName, removedName) =>
 		`「${keptName}」与「${removedName}」的内容完全相同。` +
-		`要删除这个重复文件吗？请注意，此操作不可撤销。`,
+		`要删除这个重复文件吗？文件会移入系统回收站。`,
 	deleteButton: '删除',
 	cancel: '取消',
 	movedOutLabel: (line) => `↔ 移至对照稿第 ${line} 行`,

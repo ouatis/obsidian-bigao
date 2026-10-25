@@ -49,7 +49,7 @@ export class DeleteFileModal extends Modal {
 	}
 
 	handleDeleteClick(): void {
-		this.app.vault.delete(this.file2);
+		void this.app.fileManager.trashFile(this.file2);
 
 		this.close();
 

@@ -343,7 +343,8 @@ test("bundle registers and runs both native split comparison commands", async ()
   await reloadedPlugin.onunload();
   assert.deepEqual(
     splitCalls.filter(([kind]) => kind === "detach").map(([, type]) => type),
-    ["bigao-differences-view", "bigao-panel-view", "bigao-differences-view", "bigao-panel-view"],
+    [],
+    "onunload must not detach view leaves (reviewer rule: keep user pane locations)",
   );
 });
 
@@ -666,7 +667,7 @@ test("the installed comparison and merge UI remains Chinese-localized", () => {
     "全部放弃",
     "确定要承担此风险吗？",
     "接受风险",
-    "此操作不可撤销",
+    "移入系统回收站",
   ]) {
     assert.ok(bundle.includes(label), `Expected installed bundle to include ${label}`);
   }

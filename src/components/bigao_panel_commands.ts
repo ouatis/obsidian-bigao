@@ -167,7 +167,7 @@ export async function startSplitComparison(
 				}
 				comparison.comparePath = compareFile.path;
 				comparison.sourcePath = targetFile.path;
-				workspace.revealLeaf(existingLeaf);
+				await workspace.revealLeaf(existingLeaf);
 				scheduleInlineDiffRefresh(app);
 				new Notice(
 					direction === 'vertical'
@@ -190,7 +190,7 @@ export async function startSplitComparison(
 			if (!(leaf.view instanceof MarkdownView) || leaf.view.file?.path !== compareFile.path) {
 				throw new Error(t.errorPaneNotLoaded(compareFile.name));
 			}
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 			splitComparisons.set(leaf, {
 				comparePath: compareFile.path,
 				sourcePath: targetFile.path,
