@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,6 +41,13 @@ jobs:
         run: |
           mkdir -p dist/release-assets
           cp dist/main.js manifest.json styles.css dist/release-assets/
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/release-assets/main.js
+            dist/release-assets/manifest.json
+            dist/release-assets/styles.css
       - uses: softprops/action-gh-release@v2
         with:
           files: |
