@@ -63,6 +63,12 @@ function loadRuntime(kind, settings = {}) {
 	const views = new Map();
 	const attributes = {};
 	const errors = [];
+	// Both eval'd runtimes read settings through the shared global storage
+	// pair (the module-level localStorage shim is gone from the source).
+	globalThis.__bigaoStorage = {
+		read: (key) => settings[key] ?? null,
+		write() {},
+	};
 	class PluginStub {
 		constructor(app) {
 			this.app = app;
@@ -86,13 +92,14 @@ function loadRuntime(kind, settings = {}) {
 	const document = {
 		body: { setAttribute: (name, value) => { attributes[name] = value; } },
 		createElement: () => new ElementStub(),
+		createDocumentFragment: () => new ElementStub(),
 	};
 	const app = {
 		workspace: { on() {}, onLayoutReady() {}, getLeavesOfType: () => [], detachLeavesOfType() {} },
 		vault: { on() {}, getMarkdownFiles: () => [], adapter: { getFullPath: (path) => path } },
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'localStorage', 'document', 'window', 'console', 'createEl',
+	new Function('require', 'module', 'localStorage', 'document', 'window', 'console', 'createEl', 'createDiv', 'createSpan', 'createFragment',
 		kind === 'installed' ? installed + installedExports : candidate)(
 		(id) => id === 'obsidian' ? obsidian : {
 			registerInlineDiffRuntime() {}, scheduleInlineDiffRefresh() {}, clearInlineDiffForLeaves() {},
@@ -103,6 +110,9 @@ function loadRuntime(kind, settings = {}) {
 		{ setTimeout: () => 1, clearTimeout() {}, setInterval: () => 2, clearInterval() {} },
 		{ log() {}, error: (...args) => errors.push(args) },
 		(tag) => document.createElement(tag),
+		(o) => { const el = document.createElement('div'); if (typeof o === 'object' && o) Object.assign(el, o); return el; },
+		(o) => { const el = document.createElement('span'); if (typeof o === 'object' && o) Object.assign(el, o); return el; },
+		() => document.createDocumentFragment(),
 	);
 	return { api: module.exports, commands, views, app, attributes, errors };
 }

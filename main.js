@@ -725,10 +725,23 @@ function namespacedId(name) {
   return `${prefix}${name}`;
 }
 
+// src/utils/app_storage.ts
+var globalScope = globalThis;
+function configureStorage(read, write) {
+  globalScope.__bigaoStorage = { read, write };
+}
+function storageGet(key) {
+  try {
+    return globalScope.__bigaoStorage?.read(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // src/utils/word_diff.ts
 function chineseDiffEnabled() {
   try {
-    const setting = localStorage.getItem(namespacedId("zh-diff"));
+    const setting = storageGet(namespacedId("zh-diff")) ?? null;
     return setting === null || setting === "1" || setting === "true";
   } catch {
     return true;
@@ -877,19 +890,19 @@ var ZH_CN = {
 
 // src/i18n.ts
 var LANGUAGE_OVERRIDE_KEY = "bigao-language";
-var OBSIDIAN_LANGUAGE_KEY = "language";
-function readStoredLanguage(key) {
+function interfaceLanguage() {
   try {
-    return localStorage.getItem(key);
+    const moment = globalThis.moment;
+    if (!moment) return "zh-CN";
+    return moment.locale().toLowerCase().startsWith("zh") ? "zh-CN" : "en";
   } catch {
-    return null;
+    return "zh-CN";
   }
 }
 function getLanguage() {
-  const override = readStoredLanguage(LANGUAGE_OVERRIDE_KEY);
+  const override = storageGet(LANGUAGE_OVERRIDE_KEY);
   if (override === "en" || override === "zh-CN") return override;
-  if (readStoredLanguage(OBSIDIAN_LANGUAGE_KEY) === "en") return "en";
-  return "zh-CN";
+  return interfaceLanguage();
 }
 function getStrings() {
   return getLanguage() === "en" ? EN : ZH_CN;
@@ -933,7 +946,7 @@ var ActionLineButton = class {
 // src/components/action_line_divider.ts
 var ActionLineDivider = class {
   static build(actionLine) {
-    actionLine.createEl("span", {
+    actionLine.createSpan({
       text: "|",
       cls: "text-xxs file-diff__action-line"
     });
@@ -1421,7 +1434,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
     }
   }
   buildDiffLine(line1, line2, charClass) {
-    const fragment = createEl("div");
+    const fragment = createDiv();
     if (line1 != void 0 && line1.length === 0) {
       fragment.textContent = preventEmptyString(line1);
     } else if (line1 != void 0 && line2 != void 0) {
@@ -1430,7 +1443,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         if (difference.removed) {
           continue;
         }
-        const span = createEl("span");
+        const span = createSpan();
         span.textContent = preventEmptyString(difference.value);
         if (difference.added) {
           span.classList.add(charClass);
@@ -1438,7 +1451,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
         fragment.appendChild(span);
       }
     } else if (line1 != void 0 && line2 == void 0) {
-      const span = createEl("span");
+      const span = createSpan();
       span.textContent = preventEmptyString(line1);
       span.classList.add(charClass);
       fragment.appendChild(span);
@@ -2111,7 +2124,7 @@ function getOverlay(editor, view) {
   let overlay = inlineOverlays.get(editor);
   if (!overlay || overlay.parentElement !== view.scrollDOM) {
     overlay?.remove();
-    overlay = createEl("div");
+    overlay = createDiv();
     overlay.className = "bigao-inline-overlay";
     overlay.setAttribute("aria-hidden", "true");
     view.scrollDOM.appendChild(overlay);
@@ -2150,7 +2163,7 @@ function renderInlineOverlay(editor) {
       }
       const line = lineElement?.getBoundingClientRect();
       if (!line || line.height <= 0) continue;
-      const marker = createEl("span");
+      const marker = createSpan();
       marker.className = `bigao-inline-line-marker ${range.className}`;
       const scrollerRect = view.scrollDOM.getBoundingClientRect();
       marker.style.left = `${Math.max(0, line.left - scrollerRect.left + view.scrollDOM.scrollLeft - 6)}px`;
@@ -2166,7 +2179,7 @@ function renderInlineOverlay(editor) {
       domRange.setStart(from.node, from.offset);
       domRange.setEnd(to.node, to.offset);
       for (const rect of Array.from(domRange.getClientRects())) {
-        const marker = createEl("span");
+        const marker = createSpan();
         marker.className = range.className;
         const scrollerRect = view.scrollDOM.getBoundingClientRect();
         marker.style.left = `${rect.left - scrollerRect.left + view.scrollDOM.scrollLeft}px`;
@@ -2521,7 +2534,7 @@ var palettes = ["scriptorium", "classic", "mono", "ocean", "forest"];
 function applyPalette() {
   try {
     if (!document.body) return;
-    const selected = localStorage.getItem(namespacedId("palette"));
+    const selected = storageGet(namespacedId("palette")) ?? void 0;
     const palette = palettes.includes(selected) ? selected : "scriptorium";
     document.body.setAttribute("data-bigao-palette", palette);
   } catch {
@@ -2535,6 +2548,15 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
   }
   onload() {
     configurePluginId(this.manifest?.id);
+    if (typeof this.app.loadLocalStorage === "function" && typeof this.app.saveLocalStorage === "function") {
+      configureStorage(
+        (key) => {
+          const value = this.app.loadLocalStorage(key);
+          return value == null ? null : String(value);
+        },
+        (key, value) => this.app.saveLocalStorage(key, value)
+      );
+    }
     const t = getStrings();
     applyPalette();
     registerInlineDiffRuntime(this);
@@ -2696,7 +2718,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
   async openDifferencesView(state) {
     this.app.workspace.detachLeavesOfType(differencesViewType());
     const leaf = this.app.workspace.getLeaf(true);
-    leaf.setViewState({
+    await leaf.setViewState({
       type: differencesViewType(),
       active: true,
       state

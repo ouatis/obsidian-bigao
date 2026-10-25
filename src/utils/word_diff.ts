@@ -1,6 +1,7 @@
 import { diffArrays } from 'diff';
 
 import { namespacedId } from '../ids.ts';
+import { storageGet } from './app_storage.ts';
 
 export interface WordChange {
 	value: string;
@@ -10,7 +11,7 @@ export interface WordChange {
 
 export function chineseDiffEnabled(): boolean {
 	try {
-		const setting = localStorage.getItem(namespacedId('zh-diff'));
+		const setting = storageGet(namespacedId('zh-diff')) ?? null;
 		return setting === null || setting === '1' || setting === 'true';
 	} catch {
 		return true;

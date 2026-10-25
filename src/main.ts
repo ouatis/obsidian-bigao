@@ -21,6 +21,7 @@ import { RiskyActionModal } from './components/modals/risky_action_modal.ts';
 import { applyPalette } from './utils/palette.ts';
 import { registerInlineDiffRuntime, scheduleInlineDiffRefresh } from './components/inline_diff.ts';
 import { configurePluginId, namespacedId } from './ids.ts';
+import { configureStorage } from './utils/app_storage.ts';
 import { getStrings } from './i18n.ts';
 
 export default class FileDiffPlugin extends Plugin {
@@ -30,6 +31,15 @@ export default class FileDiffPlugin extends Plugin {
 
 	override onload(): void {
 		configurePluginId(this.manifest?.id);
+		if (typeof this.app.loadLocalStorage === 'function' && typeof this.app.saveLocalStorage === 'function') {
+			configureStorage(
+				(key) => {
+					const value = this.app.loadLocalStorage(key);
+					return value == null ? null : String(value);
+				},
+				(key, value) => this.app.saveLocalStorage(key, value),
+			);
+		}
 		const t = getStrings();
 
 		applyPalette();
@@ -229,7 +239,7 @@ export default class FileDiffPlugin extends Plugin {
 
 		// Opens a new leaf (view) of the differences view type
 		const leaf = this.app.workspace.getLeaf(true);
-		leaf.setViewState({
+		await leaf.setViewState({
 			type: differencesViewType(),
 			active: true,
 			state: state as unknown as Record<string, unknown>,

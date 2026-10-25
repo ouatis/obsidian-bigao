@@ -1,4 +1,5 @@
 import { namespacedId } from '../ids.ts';
+import { storageGet } from './app_storage.ts';
 
 const palettes = ['scriptorium', 'classic', 'mono', 'ocean', 'forest'] as const;
 
@@ -7,7 +8,7 @@ export type Palette = (typeof palettes)[number];
 export function applyPalette(): void {
 	try {
 		if (!document.body) return;
-		const selected = localStorage.getItem(namespacedId('palette'));
+		const selected = storageGet(namespacedId('palette')) ?? undefined;
 	const palette = palettes.includes(selected as Palette)
 			? selected as Palette
 			: 'scriptorium';

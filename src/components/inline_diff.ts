@@ -72,7 +72,7 @@ function getOverlay(editor: Editor, view: InlineEditorView): HTMLElement {
 	let overlay = inlineOverlays.get(editor);
 	if (!overlay || overlay.parentElement !== view.scrollDOM) {
 		overlay?.remove();
-		overlay = createEl('div');
+		overlay = createDiv();
 		overlay.className = 'bigao-inline-overlay';
 		overlay.setAttribute('aria-hidden', 'true');
 		view.scrollDOM.appendChild(overlay);
@@ -114,7 +114,7 @@ function renderInlineOverlay(editor: Editor): void {
 			}
 			const line = lineElement?.getBoundingClientRect();
 			if (!line || line.height <= 0) continue;
-			const marker = createEl('span');
+			const marker = createSpan();
 			marker.className = `bigao-inline-line-marker ${range.className}`;
 			const scrollerRect = view.scrollDOM.getBoundingClientRect();
 			marker.style.left = `${Math.max(0, line.left - scrollerRect.left + view.scrollDOM.scrollLeft - 6)}px`;
@@ -131,7 +131,7 @@ function renderInlineOverlay(editor: Editor): void {
 			domRange.setStart(from.node, from.offset);
 			domRange.setEnd(to.node, to.offset);
 			for (const rect of Array.from(domRange.getClientRects())) {
-				const marker = createEl('span');
+				const marker = createSpan();
 				marker.className = range.className;
 				const scrollerRect = view.scrollDOM.getBoundingClientRect();
 				marker.style.left = `${rect.left - scrollerRect.left + view.scrollDOM.scrollLeft}px`;

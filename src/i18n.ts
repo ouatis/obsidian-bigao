@@ -1,5 +1,6 @@
 import { EN } from './locales/en.ts';
 import { ZH_CN } from './locales/zh-CN.ts';
+import { storageGet } from './utils/app_storage.ts';
 
 export type Language = 'zh-CN' | 'en';
 
@@ -63,26 +64,27 @@ export interface Strings {
 }
 
 const LANGUAGE_OVERRIDE_KEY = 'bigao-language';
-const OBSIDIAN_LANGUAGE_KEY = 'language';
 
-function readStoredLanguage(key: string): string | null {
+/** The Obsidian interface language, detected through moment's locale. */
+function interfaceLanguage(): Language {
 	try {
-		return localStorage.getItem(key);
+		const moment = (globalThis as unknown as { moment?: { locale(): string } }).moment;
+		if (!moment) return 'zh-CN';
+		return moment.locale().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
 	} catch {
-		return null;
+		return 'zh-CN';
 	}
 }
 
 /**
  * 简体中文保持默认，已安装的中文环境不受影响；
- * 英文环境跟随 Obsidian 的界面语言。可用 localStorage
- * 的 bigao-language 显式指定 en 或 zh-CN。
+ * 英文环境跟随 Obsidian 的界面语言（moment.locale 检测）。
+ * 可用 app-scoped 存储的 bigao-language 键显式指定 en 或 zh-CN。
  */
 export function getLanguage(): Language {
-	const override = readStoredLanguage(LANGUAGE_OVERRIDE_KEY);
+	const override = storageGet(LANGUAGE_OVERRIDE_KEY);
 	if (override === 'en' || override === 'zh-CN') return override;
-	if (readStoredLanguage(OBSIDIAN_LANGUAGE_KEY) === 'en') return 'en';
-	return 'zh-CN';
+	return interfaceLanguage();
 }
 
 export function getStrings(): Strings {

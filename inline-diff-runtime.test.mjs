@@ -140,7 +140,7 @@ test('renders word highlights in both visible Markdown panes without changing ei
 		},
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'window', 'document', 'console', 'Node', 'createEl', helperBundle)(
+	new Function('require', 'module', 'window', 'document', 'console', 'Node', 'createEl', 'createDiv', 'createSpan', helperBundle)(
 		(id) => id === 'obsidian' ? {} : {},
 		module,
 		windowApi,
@@ -148,6 +148,8 @@ test('renders word highlights in both visible Markdown panes without changing ei
 		{ error(...args) { throw new Error(String(args[0])); } },
 		{ ELEMENT_NODE: 1 },
 		(tag) => documentApi.createElement(tag),
+		() => documentApi.createElement('div'),
+		() => documentApi.createElement('span'),
 	);
 	const listeners = [];
 	const app = {

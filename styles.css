@@ -87,7 +87,7 @@
    主名：比稿（bǐgǎo）  副名：Collate
    默认 scriptorium：取 Scriptorium 的暖赭色调，随明暗模式切换。
    切换（Obsidian 控制台，无需重启）：
-     localStorage.setItem("bigao-palette", "ocean")
+   app.saveLocalStorage("bigao-palette", "ocean"); app.plugins.plugins.bigao && app.plugins.disable("bigao") & app.plugins.enable("bigao")
    可选：scriptorium（默认） / classic / mono / ocean / forest
    ================================================================== */
 

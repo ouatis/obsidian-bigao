@@ -361,7 +361,7 @@ export class DifferencesView extends ItemView {
 	}
 
 	private buildDiffLine(line1: string, line2: string, charClass: string) {
-		const fragment = createEl('div');
+		const fragment = createDiv();
 
 		if (line1 != undefined && line1.length === 0) {
 			fragment.textContent = preventEmptyString(line1);
@@ -373,7 +373,7 @@ export class DifferencesView extends ItemView {
 					continue;
 				}
 
-				const span = createEl('span');
+				const span = createSpan();
 				// Necessary to give the line a height when it's empty.
 				span.textContent = preventEmptyString(difference.value);
 				if (difference.added) {
@@ -382,7 +382,7 @@ export class DifferencesView extends ItemView {
 				fragment.appendChild(span);
 			}
 		} else if(line1 != undefined && line2 == undefined) {
-			const span = createEl('span');
+			const span = createSpan();
 			// Necessary to give the line a height when it's empty.
 			span.textContent = preventEmptyString(line1);
 			span.classList.add(charClass);
