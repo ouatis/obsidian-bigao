@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-- 本目录对应 JARDIN vault 中已安装的 `bigao` 插件；manifest 名称为 `Collate`（中文界面名「比稿」），作者 `SigiL`，manifest 版本为 `0.2.0`（2026-10-19 从继承的 `1.2.2` 重置，本插件自此按自己的版本线走）。原作者 Till Friebe 的署名保留在 README 与 LICENSE。
-- 自 `0.2.0`（2026-10-24）起，根目录 `main.js` 是 `src/` 的未压缩 UTF-8 构建，`panel-render-limit.test.mjs` 以「安装文件与全新源码构建逐字节相等」保障二者同步。`src/` 以原插件 1.1.2 为基线恢复，已通过核心行为对照及 Obsidian 1.14.4 独立测试库验证；详见 `src/RESTORE-PLAN.md`。这不是全部环境与边界场景等价的承诺。
-- 界面文案位于 `src/i18n.ts` 与 `src/locales/{en,zh-CN}.ts`：简体中文是默认语言（与历史安装一致），Obsidian 界面语言为英文时自动切换英文，`localStorage` 的 `bigao-language` 可显式指定 `en` / `zh-CN`。
+- 本目录对应 JARDIN vault 中已安装的 `bigao` 插件；manifest 名称为 `Collate`（中文界面名「比稿」），作者 `SigiL`，manifest 版本为 `0.7.0`（2026-10-19 从继承的 `1.2.2` 重置为 `0.2.0`，本插件自此按自己的版本线走）。原作者 Till Friebe 的署名保留在 README 与 LICENSE。
+- 自 `0.2.0`（2026-10-24）起源码按 `src/` 组织；根目录 `main.js` 是 `src/` 的未压缩 UTF-8 构建，`panel-render-limit.test.mjs` 以「安装文件与全新源码构建逐字节相等」保障二者同步。`src/` 以原插件 1.1.2 为基线恢复，已通过核心行为对照及 Obsidian 1.14.4 独立测试库验证；详见 `src/RESTORE-PLAN.md`。这不是全部环境与边界场景等价的承诺。
+- 界面文案位于 `src/i18n.ts` 与 `src/locales/{en,zh-CN}.ts`：简体中文是默认语言（与历史安装一致），Obsidian 界面语言为英文时自动切换英文；偏好自 `0.7.0` 起存 Obsidian app-scoped 存储（`src/utils/app_storage.ts`，由 `src/main.ts:32-42` 的 `configureStorage` 装配），`bigao-language` 键仍可显式指定 `en` / `zh-CN`。
 - `npm run build` 只生成 `dist/main.js` 等验证产物；`npm run package:candidate` 生成完整的 `dist/candidate/` 源码候选安装包。当前没有自动安装步骤，不得未经验证和明确安装请求覆盖根目录安装版。
 - 本仓库已接入家族发布链：`versions.json` + `.github/workflows/release.yml`（verify 后按 tag 发布 `main.js` / `manifest.json` / `styles.css`），`verify` 以 `npm audit --audit-level=moderate` 为门禁。视觉遵循 `github/_design/obsidian-family/DESIGN.md`（一张书桌，四件工具）。
 
