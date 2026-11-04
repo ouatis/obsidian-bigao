@@ -165,7 +165,7 @@ export class BigaoPanelView extends ItemView {
 			this.followCursor(false);
 		} catch (error) {
 			if (revision !== this.renderRevision) return;
-			console.error('比稿：面板更新失败', error);
+			console.error(getStrings().logPanelRefreshFailed, error);
 			this.contentEl.empty();
 			this.contentEl.createDiv({
 				cls: 'bigao-panel__empty',

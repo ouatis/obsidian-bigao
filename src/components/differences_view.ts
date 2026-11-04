@@ -235,7 +235,7 @@ export class DifferencesView extends ItemView {
 			return true;
 		} catch (error) {
 			if (revision !== this.updateRevision || state !== this.state) return false;
-			console.error('比稿：读取或计算全文差异失败', error);
+			console.error(getStrings().logFullDiffFailed, error);
 			this.comparisonError = getStrings().readError(
 				error instanceof Error ? error.message : String(error)
 			);

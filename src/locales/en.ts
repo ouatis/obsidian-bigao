@@ -69,4 +69,11 @@ export const EN: Strings = {
 	nearMoveHint: 'Near move · keeps the revised wording',
 	summaryDifferences: (count) => `${count} difference${count === 1 ? '' : 's'}`,
 	summaryNoDifferences: 'No differences',
+	logUpdatePanesFailed: 'Bigao: updating the side-by-side panes failed',
+	logPrepareSplitFailed: 'Bigao: preparing the side-by-side comparison failed',
+	logPanelRefreshFailed: 'Bigao: refreshing the panel failed',
+	logFullDiffFailed: 'Bigao: reading or computing the full-text diff failed',
+	logInlineRefreshFailed: 'Bigao: refreshing the inline diffs failed',
+	logRestoreSplitFailed: 'Bigao: restoring the side-by-side comparisons failed',
+	logSaveSplitFailed: 'Bigao: saving the side-by-side comparisons failed',
 };

@@ -67,4 +67,11 @@ export const ZH_CN: Strings = {
 	nearMoveHint: '近似移动 · 采用对照稿文字',
 	summaryDifferences: (count) => `共 ${count} 处差异`,
 	summaryNoDifferences: '无差异',
+	logUpdatePanesFailed: '比稿：更新分屏对照失败',
+	logPrepareSplitFailed: '比稿：准备分屏对照失败',
+	logPanelRefreshFailed: '比稿：面板更新失败',
+	logFullDiffFailed: '比稿：读取或计算全文差异失败',
+	logInlineRefreshFailed: '比稿：行内差异刷新失败',
+	logRestoreSplitFailed: '比稿：恢复分屏对照失败',
+	logSaveSplitFailed: '比稿：保存分屏对照失败',
 };

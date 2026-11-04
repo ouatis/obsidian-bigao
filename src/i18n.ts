@@ -69,6 +69,14 @@ export interface Strings {
 	/** 差异视图底部的完成线。Summary line at the end of the diff sheet. */
 	summaryDifferences: (count: number) => string;
 	summaryNoDifferences: string;
+	/** 控制台诊断日志。Console diagnostics. */
+	logUpdatePanesFailed: string;
+	logPrepareSplitFailed: string;
+	logPanelRefreshFailed: string;
+	logFullDiffFailed: string;
+	logInlineRefreshFailed: string;
+	logRestoreSplitFailed: string;
+	logSaveSplitFailed: string;
 }
 
 const LANGUAGE_OVERRIDE_KEY = 'bigao-language';

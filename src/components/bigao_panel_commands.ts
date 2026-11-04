@@ -176,7 +176,7 @@ export async function startSplitComparison(
 				);
 				return true;
 			} catch (error) {
-				console.error('比稿：更新分屏对照失败', error);
+				console.error(getStrings().logUpdatePanesFailed, error);
 				new Notice(
 					t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
 				);
@@ -212,7 +212,7 @@ export async function startSplitComparison(
 			throw error;
 		}
 	} catch (error) {
-		console.error('比稿：准备分屏对照失败', error);
+		console.error(getStrings().logPrepareSplitFailed, error);
 		new Notice(
 			t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
 		);

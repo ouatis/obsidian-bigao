@@ -214,7 +214,7 @@ export default class FileDiffPlugin extends Plugin {
 			if (restored > 0) scheduleInlineDiffRefresh(this.app, 0);
 			await this.saveSplitComparisons();
 		} catch (error) {
-			console.error('比稿：恢复分屏对照失败', error);
+			console.error(getStrings().logRestoreSplitFailed, error);
 		}
 	}
 
@@ -223,7 +223,7 @@ export default class FileDiffPlugin extends Plugin {
 		try {
 			await this.saveData({ comparisons: snapshotComparisons(this.app) });
 		} catch (error) {
-			console.error('比稿：保存分屏对照失败', error);
+			console.error(getStrings().logSaveSplitFailed, error);
 		}
 	}
 

@@ -2,6 +2,7 @@ import type { App, Editor, Plugin, WorkspaceLeaf } from 'obsidian';
 import { computePanelDifferences } from '../data/panel_differences.ts';
 import type { PanelDifference } from '../data/panel_differences.ts';
 import { buildInlineDecorationRanges } from '../data/inline_decoration_ranges.ts';
+import { getStrings } from '../i18n.ts';
 import { tokenizeWords } from '../utils/word_diff.ts';
 
 interface SplitComparison {
@@ -278,7 +279,7 @@ export function scheduleInlineDiffRefresh(app: App, delay = 180): void {
 		try {
 			refreshInlineDiffs(app);
 		} catch (error) {
-			console.error('比稿：行内差异刷新失败', error);
+			console.error(getStrings().logInlineRefreshFailed, error);
 		}
 	}, delay);
 	pendingRefreshes.set(app, timer);

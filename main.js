@@ -858,7 +858,14 @@ var EN = {
   unpairMove: "Handle separately",
   nearMoveHint: "Near move · keeps the revised wording",
   summaryDifferences: (count) => `${count} difference${count === 1 ? "" : "s"}`,
-  summaryNoDifferences: "No differences"
+  summaryNoDifferences: "No differences",
+  logUpdatePanesFailed: "Bigao: updating the side-by-side panes failed",
+  logPrepareSplitFailed: "Bigao: preparing the side-by-side comparison failed",
+  logPanelRefreshFailed: "Bigao: refreshing the panel failed",
+  logFullDiffFailed: "Bigao: reading or computing the full-text diff failed",
+  logInlineRefreshFailed: "Bigao: refreshing the inline diffs failed",
+  logRestoreSplitFailed: "Bigao: restoring the side-by-side comparisons failed",
+  logSaveSplitFailed: "Bigao: saving the side-by-side comparisons failed"
 };
 
 // src/locales/zh-CN.ts
@@ -916,7 +923,14 @@ var ZH_CN = {
   unpairMove: "拆开处理",
   nearMoveHint: "近似移动 · 采用对照稿文字",
   summaryDifferences: (count) => `共 ${count} 处差异`,
-  summaryNoDifferences: "无差异"
+  summaryNoDifferences: "无差异",
+  logUpdatePanesFailed: "比稿：更新分屏对照失败",
+  logPrepareSplitFailed: "比稿：准备分屏对照失败",
+  logPanelRefreshFailed: "比稿：面板更新失败",
+  logFullDiffFailed: "比稿：读取或计算全文差异失败",
+  logInlineRefreshFailed: "比稿：行内差异刷新失败",
+  logRestoreSplitFailed: "比稿：恢复分屏对照失败",
+  logSaveSplitFailed: "比稿：保存分屏对照失败"
 };
 
 // src/i18n.ts
@@ -1432,7 +1446,7 @@ var DifferencesView = class extends import_obsidian3.ItemView {
       return true;
     } catch (error) {
       if (revision !== this.updateRevision || state !== this.state) return false;
-      console.error("比稿：读取或计算全文差异失败", error);
+      console.error(getStrings().logFullDiffFailed, error);
       this.comparisonError = getStrings().readError(
         error instanceof Error ? error.message : String(error)
       );
@@ -2055,7 +2069,7 @@ var BigaoPanelView = class extends import_obsidian4.ItemView {
       this.followCursor(false);
     } catch (error) {
       if (revision !== this.renderRevision) return;
-      console.error("比稿：面板更新失败", error);
+      console.error(getStrings().logPanelRefreshFailed, error);
       this.contentEl.empty();
       this.contentEl.createDiv({
         cls: "bigao-panel__empty",
@@ -2457,7 +2471,7 @@ function scheduleInlineDiffRefresh(app, delay = 180) {
     try {
       refreshInlineDiffs(app);
     } catch (error) {
-      console.error("比稿：行内差异刷新失败", error);
+      console.error(getStrings().logInlineRefreshFailed, error);
     }
   }, delay);
   pendingRefreshes.set(app, timer);
@@ -2603,7 +2617,7 @@ async function startSplitComparison(app, direction, sourceView) {
         );
         return true;
       } catch (error) {
-        console.error("比稿：更新分屏对照失败", error);
+        console.error(getStrings().logUpdatePanesFailed, error);
         new import_obsidian6.Notice(
           t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
         );
@@ -2637,7 +2651,7 @@ async function startSplitComparison(app, direction, sourceView) {
       throw error;
     }
   } catch (error) {
-    console.error("比稿：准备分屏对照失败", error);
+    console.error(getStrings().logPrepareSplitFailed, error);
     new import_obsidian6.Notice(
       t.noticeOpenFailed(error instanceof Error ? error.message : String(error))
     );
@@ -2842,7 +2856,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
       if (restored > 0) scheduleInlineDiffRefresh(this.app, 0);
       await this.saveSplitComparisons();
     } catch (error) {
-      console.error("比稿：恢复分屏对照失败", error);
+      console.error(getStrings().logRestoreSplitFailed, error);
     }
   }
   /** Persists the live comparisons; closed or repurposed panes are pruned. */
@@ -2850,7 +2864,7 @@ var FileDiffPlugin = class extends import_obsidian8.Plugin {
     try {
       await this.saveData({ comparisons: snapshotComparisons(this.app) });
     } catch (error) {
-      console.error("比稿：保存分屏对照失败", error);
+      console.error(getStrings().logSaveSplitFailed, error);
     }
   }
   getFileToCompare(activeFile) {
