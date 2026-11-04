@@ -21,7 +21,7 @@ _Two drafts, side by side._
 An Obsidian plugin that opens two notes in a native split and marks what
 differs between them — in both notes, down to the word.
 
-![Merge view with a moved paragraph: the moved-in block carries one decision line — Accept move, Reject move, Handle separately — and the moved-out block links back with a badge. Real screenshot, version 0.8.0.](img/screenshot-merge-move.png)
+In the merge view of a moved paragraph, the moved-in block carries one decision line — Accept move, Reject move, Handle separately — and the moved-out block links back with a badge.
 
 Chinese text is segmented through `Intl.Segmenter`, so differences are
 highlighted word by word instead of line by line. Both sides read the
@@ -46,7 +46,7 @@ are available.
 
 ## Install
 
-Requires Obsidian 0.15.0 or newer. Download `main.js`, `manifest.json` and
+Requires Obsidian 1.8.7 or newer. Download `main.js`, `manifest.json` and
 `styles.css` from the
 [releases page](https://github.com/ouatis/obsidian-bigao/releases), place
 them in `<vault>/.obsidian/plugins/bigao/`, then enable the plugin.
@@ -64,7 +64,9 @@ Run a command from the command palette:
 | `Collate: Compare and merge` | Diff view with per-hunk merge actions |
 | `Collate: Find sync conflicts and merge` | Walk through `sync-conflict` notes and merge them one by one |
 
-In a Simplified Chinese Obsidian the same commands read `比稿：…`. The
+The ribbon icon (two columns) starts the side-by-side comparison without
+opening the palette. In a Simplified Chinese Obsidian the same commands
+read `比稿：…`. The
 side panel follows the source cursor while you write; the follow toggle
 sits in its header. `Collate: Close side-by-side comparison` only closes
 panes that still show the note Collate opened there; panes you have
@@ -89,24 +91,13 @@ desktop plugin; it is not tested on mobile.
 
 ## Development
 
-With Node.js 22.6 or newer:
-
 ```sh
-npm ci
-npm run verify
+npm ci && npm run verify
 ```
 
-runs the dependency audit, the installed-bundle regression, the strict
-TypeScript check, the source unit tests, a clean production build and the
-installed-vs-source parity checks. `AGENTS.md` records the maintenance
-conventions; `README.local.md` and `src/RESTORE-PLAN.md` document the
-restoration history.
-
-`npm run package:candidate` writes a full candidate package with checksums
-to `dist/candidate/` (three files; the inline diff runtime is bundled into
-`main.js`). For a real desktop smoke test, provide the local Obsidian paths
-and run `npm run test:obsidian` — it only ever touches isolated temporary
-vaults.
+`npm run verify` is the whole gate: dependency audit, installed-bundle
+regression, strict TypeScript, unit tests, a clean production build and
+installed-vs-source parity. `AGENTS.md` records the maintenance conventions.
 
 ## License
 
