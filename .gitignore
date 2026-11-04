@@ -24,6 +24,7 @@
 /.github/**
 !/.github/workflows/
 !/.github/workflows/*.yml
+!/.github/dependabot.yml
 !/img/
 /img/**
 !/img/*.svg
