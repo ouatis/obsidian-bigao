@@ -9,9 +9,9 @@ _Two drafts, side by side._
 <a href="https://community.obsidian.md/plugins/bigao"><img src="img/open-in-obsidian-button.svg" alt="Open Collate in Obsidian" width="150"></a>
 
 <p>
-  <img src="https://img.shields.io/github/v/release/ouatis/obsidian-bigao?style=flat-square&label=version&color=c24e18" alt="Latest release">
-  <img src="https://img.shields.io/github/downloads/ouatis/obsidian-bigao/total?style=flat-square&logo=obsidian&logoColor=white&label=downloads&color=6d665d" alt="Downloads">
-  <img src="https://img.shields.io/github/license/ouatis/obsidian-bigao?style=flat-square&label=license&color=406e40" alt="MIT License">
+  <img src="https://img.shields.io/github/v/release/ouatis/obsidian-bigao?style=flat-square&label=version&color=ad3e32" alt="Latest release">
+  <img src="https://img.shields.io/github/downloads/ouatis/obsidian-bigao/total?style=flat-square&logo=obsidian&logoColor=white&label=downloads&color=d0a85c" alt="Downloads">
+  <img src="https://img.shields.io/github/license/ouatis/obsidian-bigao?style=flat-square&label=license&color=2f6754" alt="MIT License">
 </p>
 
 </div>
@@ -46,8 +46,11 @@ are available.
 
 ## Install
 
-Requires Obsidian 1.8.7 or newer. Download `main.js`, `manifest.json` and
-`styles.css` from the
+Available in the Obsidian community plugin store: enable community plugins,
+then **Settings → Community plugins → Browse** and search for **Collate**.
+
+Manual, if you prefer: download `main.js`, `manifest.json` and `styles.css`
+from the
 [releases page](https://github.com/ouatis/obsidian-bigao/releases), place
 them in `<vault>/.obsidian/plugins/bigao/`, then enable the plugin.
 
