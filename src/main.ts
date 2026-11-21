@@ -27,7 +27,7 @@ import {
 } from './components/bigao_panel_commands.ts';
 import { pickCompareFile } from './components/bigao_compare_file_modal.ts';
 import { RiskyActionModal } from './components/modals/risky_action_modal.ts';
-import { applyPalette } from './utils/palette.ts';
+import { applyPalette, clearPalette } from './utils/palette.ts';
 import { registerInlineDiffRuntime, scheduleInlineDiffRefresh } from './components/inline_diff.ts';
 import { configurePluginId, namespacedId } from './ids.ts';
 import { configureStorage } from './utils/app_storage.ts';
@@ -42,8 +42,10 @@ export default class FileDiffPlugin extends Plugin {
 		configurePluginId(this.manifest?.id);
 		if (typeof this.app.loadLocalStorage === 'function' && typeof this.app.saveLocalStorage === 'function') {
 			configureStorage((key) => {
-				const value = this.app.loadLocalStorage(key);
-				return value == null ? null : String(value);
+				const value: unknown = this.app.loadLocalStorage(key);
+				if (typeof value === 'string') return value;
+				if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+				return null;
 			});
 		}
 		const t = getStrings();
@@ -199,6 +201,7 @@ export default class FileDiffPlugin extends Plugin {
 	override onunload(): void {
 		// Do not detach view leaves here: resetting leaves on unload moves a
 		// user-relocated pane back to its default position on the next load.
+		clearPalette();
 		void this.saveSplitComparisons();
 	}
 

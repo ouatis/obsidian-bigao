@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
 
 const root = dirname(fileURLToPath(import.meta.url));
-const helperBundle = await readFile(join(root, 'dist', 'inline-diff-runtime-v9.js'), 'utf8');
+const helperBundle = (
+	await build({
+		entryPoints: [join(root, 'src', 'components', 'inline_diff.ts')],
+		bundle: true,
+		write: false,
+		external: ['obsidian'],
+		format: 'cjs',
+		target: 'es2022',
+		minify: true,
+	})
+).outputFiles[0].text;
 
 test('inline-diff helper refreshes on edits, layout changes, and saved-file modifications without registering CM extensions', () => {
 	const pendingTimers = new Map();
@@ -22,11 +32,13 @@ test('inline-diff helper refreshes on edits, layout changes, and saved-file modi
 		clearTimeout(id) { pendingTimers.delete(id); },
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'window', 'document', 'console', helperBundle)(
+	new Function('require', 'module', 'window', 'document', 'activeDocument', 'createFragment', 'console', helperBundle)(
 		(id) => id === 'obsidian' ? {} : {},
 		module,
 		windowApi,
 		{},
+		{},
+		() => ({ children: [], appendChild() {} }),
 		{ error(...args) { throw new Error(String(args[0])); } },
 	);
 
@@ -140,16 +152,18 @@ test('renders word highlights in both visible Markdown panes without changing ei
 		},
 	};
 	const module = { exports: {} };
-	new Function('require', 'module', 'window', 'document', 'console', 'Node', 'createEl', 'createDiv', 'createSpan', helperBundle)(
+	new Function('require', 'module', 'window', 'document', 'activeDocument', 'console', 'Node', 'createEl', 'createDiv', 'createSpan', 'createFragment', helperBundle)(
 		(id) => id === 'obsidian' ? {} : {},
 		module,
 		windowApi,
+		documentApi,
 		documentApi,
 		{ error(...args) { throw new Error(String(args[0])); } },
 		{ ELEMENT_NODE: 1 },
 		(tag) => documentApi.createElement(tag),
 		() => documentApi.createElement('div'),
 		() => documentApi.createElement('span'),
+		() => documentApi.createDocumentFragment(),
 	);
 	const listeners = [];
 	const app = {

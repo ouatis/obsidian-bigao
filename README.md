@@ -98,9 +98,9 @@ desktop plugin; it is not tested on mobile.
 npm ci && npm run verify
 ```
 
-`npm run verify` is the whole gate: dependency audit, installed-bundle
-regression, strict TypeScript, unit tests, a clean production build and
-installed-vs-source parity. `AGENTS.md` records the maintenance conventions.
+`npm run verify` is the whole gate: dependency audit, strict TypeScript,
+ESLint, unit tests, production build and bundle smoke tests. `AGENTS.md`
+records the maintenance conventions.
 
 ## License
 

@@ -19,7 +19,6 @@ const context = await esbuild.context({
 if (production) {
 	await context.rebuild();
 	await context.dispose();
-	await import('./esbuild.inline-diff.config.mjs');
 } else {
 	await context.watch();
 }

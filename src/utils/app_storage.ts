@@ -1,9 +1,8 @@
 type StorageReader = (key: string) => string | null;
 
-// The active reader lives on globalThis so every copy of this module (the
-// installed bundle and a freshly built one, as exercised by the parity
-// tests) shares one configuration once the plugin wires it.
-const globalScope = globalThis as typeof globalThis & {
+// The active reader lives on the window/realm singleton so every module copy
+// shares one configuration once the plugin wires it.
+const globalScope = (typeof window !== 'undefined' ? window : Object) as unknown as {
 	__bigaoStorage?: StorageReader;
 };
 

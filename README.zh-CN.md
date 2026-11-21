@@ -58,7 +58,7 @@ _两份稿子，并排放着。_
 npm ci && npm run verify
 ```
 
-`npm run verify` 是完整的门禁：依赖审计、已安装包回归、严格 TypeScript 检查、源码单元测试、干净的生产构建，以及安装版与源码的行为对照。维护约定见 `AGENTS.md`。
+`npm run verify` 是完整的门禁：依赖审计、严格 TypeScript 检查、ESLint、源码单元测试、干净的生产构建与 bundle 冒烟测试。维护约定见 `AGENTS.md`。
 
 ## 来源与许可
 

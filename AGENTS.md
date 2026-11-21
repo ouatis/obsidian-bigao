@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- 本目录对应一个开发用 vault 中已安装的 `bigao` 插件；manifest 名称为 `Collate`（中文界面名「比稿」），作者 `SigiL`，manifest 版本为 `0.8.0`（2026-10-19 从继承的 `1.2.2` 重置为 `0.2.0`，本插件自此按自己的版本线走）。原作者 Till Friebe 的署名保留在 README 与 LICENSE。
-- 自 `0.2.0`（2026-10-24）起源码按 `src/` 组织；根目录 `main.js` 是 `src/` 的未压缩 UTF-8 构建，`panel-render-limit.test.mjs` 以「安装文件与全新源码构建逐字节相等」保障二者同步。`src/` 以原插件 1.1.2 为基线恢复，已通过核心行为对照及 Obsidian 1.14.4 独立测试库验证；详见 `src/RESTORE-PLAN.md`。这不是全部环境与边界场景等价的承诺。
-- 界面文案位于 `src/i18n.ts` 与 `src/locales/{en,zh-CN}.ts`：简体中文是默认语言（与历史安装一致），Obsidian 界面语言为英文时自动切换英文；偏好自 `0.7.0` 起存 Obsidian app-scoped 存储（`src/utils/app_storage.ts`，由 `src/main.ts:32-42` 的 `configureStorage` 装配），`bigao-language` 键仍可显式指定 `en` / `zh-CN`。
-- `npm run build` 只生成 `dist/main.js` 等验证产物；`npm run package:candidate` 生成完整的 `dist/candidate/` 源码候选安装包。当前没有自动安装步骤，不得未经验证和明确安装请求覆盖根目录安装版。
-- 本仓库已接入家族发布链：`versions.json` + `.github/workflows/release.yml`（verify 后按 tag 发布 `main.js` / `manifest.json` / `styles.css`），`verify` 以 `npm audit --audit-level=moderate` 为门禁。视觉遵循 `github/_design/obsidian-family/DESIGN.md`（一张书桌，四件工具）。
+- 本仓库对应 `bigao` 插件；manifest 名称为 `Collate`（中文界面名「比稿」），作者 `SigiL`，manifest 版本为 `0.8.2`（2026-10-19 从继承的 `1.2.2` 重置为 `0.2.0`，本插件自此按自己的版本线走）。原作者 Till Friebe 的署名保留在 README 与 LICENSE。
+- 源码按 `src/` 组织，是唯一真源；构建产物输出到 `dist/main.js`（由 GitHub Releases 分发，仓库根目录不再跟踪构建产物 `main.js` 或历史外置 sidecar `inline-diff-runtime-v9.js`）。
+- 界面文案位于 `src/i18n.ts` 与 `src/locales/{en,zh-CN}.ts`：简体中文是默认语言（与历史安装一致），Obsidian 界面语言为英文时自动切换英文；偏好自 `0.7.0` 起存 Obsidian app-scoped 存储（`src/utils/app_storage.ts`，由 `src/main.ts` 的 `configureStorage` 装配），`bigao-language` 键仍可显式指定 `en` / `zh-CN`。
+- `npm run build` 生成 `dist/main.js`。当前没有自动安装步骤，不得未经验证和明确安装请求覆盖本地 vault 安装版。
+- 本仓库已接入家族发布链：`versions.json` + `.github/workflows/release.yml`（verify 后按 tag 发布 `main.js` / `manifest.json` / `styles.css`），`verify` 以 `npm audit --audit-level=moderate` 与 `eslint-plugin-obsidianmd` 为门禁。视觉遵循 `github/_design/obsidian-family/DESIGN.md`（一张书桌，四件工具）。
 
 ## 验证
 
@@ -14,7 +14,7 @@
 npm run verify
 ```
 
-完整链路包括：已安装 bundle 语法和回归、严格 TypeScript 检查、源码纯逻辑测试、隔离构建、源码 bundle 冒烟、同输入的安装版/源码行为对照与可重复构建检查。它不安装构建产物，也不能替代 Obsidian 内的 reload、错误检查和界面核验。`npm run test:obsidian` 使用独立临时资料目录和人工稿件验证两套安装包；须提供 `BIGAO_OBSIDIAN_EXE`、`BIGAO_OBSIDIAN_ASAR`，不能改成复用用户的真实配置目录。
+完整链路包括：依赖审计、严格 TypeScript 检查、ESLint（`eslint-plugin-obsidianmd` + `no-unsafe-*`）、源码纯逻辑与未压缩构建测试、生产构建与压缩 bundle 冒烟测试。它不安装构建产物，也不能替代 Obsidian 内的 reload、错误检查和界面核验。`npm run test:obsidian` 使用独立临时资料目录和人工稿件验证安装包；须提供 `BIGAO_OBSIDIAN_EXE`、`BIGAO_OBSIDIAN_ASAR`，不能改成复用用户的真实配置目录。
 
 ## 结构
 
@@ -27,8 +27,7 @@ npm run verify
 - `src/components/bigao_compare_file_modal.ts`：对照稿选择器。
 - `src/components/bigao_panel_render.ts`：全文差异 DOM 渲染和行定位。
 - `src/data/panel_differences.ts`、`src/utils/word_diff.ts`：有界差异算法与中英文分词。
-- `panel-render-limit.test.mjs`：当前安装 bundle 回归；`source-bundle.test.mjs`：隔离源码 bundle 冒烟。
-- `source-parity.test.mjs`：同输入行为与重复构建核对；`scripts/obsidian-smoke.mjs`：独立桌面运行验证；`scripts/package-candidate.mjs`：仅向 `dist/candidate/` 打包，不安装。
+- `panel-render-limit.test.mjs`、`source-bundle.test.mjs`、`inline-diff-runtime.test.mjs`：bundle 回归与行内差异运行时测试；`scripts/obsidian-smoke.mjs`：独立桌面运行验证。
 
 ## 必须保留的本地行为
 

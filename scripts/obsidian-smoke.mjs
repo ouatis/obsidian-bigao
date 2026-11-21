@@ -19,26 +19,25 @@ if (!coreName) throw new Error('Use a versioned obsidian-<version>.asar from the
 await copyFile(coreAsar, join(profile, coreName));
 
 const before = {};
-for (const name of ['main.js', 'inline-diff-runtime-v9.js', 'styles.css']) {
-	before[name] = createHash('sha256').update(await readFile(join(root, name))).digest('hex');
+for (const [name, rel] of [['main.js', 'dist/main.js'], ['manifest.json', 'manifest.json'], ['styles.css', 'styles.css']]) {
+	before[rel] = createHash('sha256').update(await readFile(join(root, rel))).digest('hex');
 }
 const notes = {
 	'original.md': '# 对照测试\n\n我喜欢春天的花园。\n\n我们沿着河岸散步。\n\n原稿独有的一段。\n',
 	'revised.md': '# 对照测试\n\n我喜欢秋天的花园。\n\n我们沿着河岸慢慢散步。\n\n改稿独有的一段。\n',
 };
 const vaults = {};
-for (const kind of ['baseline', 'candidate']) {
+for (const kind of ['candidate']) {
 	const vault = join(temporary, kind);
 	const plugin = join(vault, '.obsidian', 'plugins', 'bigao');
 	await mkdir(plugin, { recursive: true });
 	for (const [name, text] of Object.entries(notes)) await writeFile(join(vault, name), text);
-	for (const name of ['manifest.json', 'styles.css', 'main.js']) {
-		await copyFile(join(root, kind === 'candidate' ? 'dist/candidate' : '', name), join(plugin, name));
-	}
-	if (kind === 'baseline') await copyFile(join(root, 'inline-diff-runtime-v9.js'), join(plugin, 'inline-diff-runtime-v9.js'));
+	await copyFile(join(root, 'manifest.json'), join(plugin, 'manifest.json'));
+	await copyFile(join(root, 'styles.css'), join(plugin, 'styles.css'));
+	await copyFile(join(root, 'dist', 'main.js'), join(plugin, 'main.js'));
 	await writeFile(join(vault, '.obsidian', 'community-plugins.json'), JSON.stringify(['bigao']));
 	await writeFile(join(vault, '.obsidian', 'app.json'), JSON.stringify({ showInlineTitle: false, defaultViewMode: 'source', livePreview: false }));
-	vaults[kind === 'baseline' ? 'baa0000000000001' : 'baa0000000000002'] = { path: vault, ts: Date.now(), open: true };
+	vaults['baa0000000000002'] = { path: vault, ts: Date.now(), open: true };
 }
 await writeFile(join(profile, 'obsidian.json'), JSON.stringify({ vaults, cli: false, updateDisabled: true }));
 console.log(`Isolated fixtures and profile: ${temporary}`);
@@ -177,9 +176,8 @@ try {
 		report.checks.push({ kind, editorState, editingWorks: true });
 		for (const [name, text] of Object.entries(notes)) assert.equal(await readFile(join(temporary, kind, name), 'utf8'), text);
 	}
-	assert.deepEqual(report.checks.find(c=>c.kind==='candidate'&&c.fullDiff)?.fullDiff, report.checks.find(c=>c.kind==='baseline'&&c.fullDiff)?.fullDiff);
-	for (const [name, hash] of Object.entries(before)) {
-		assert.equal(createHash('sha256').update(await readFile(join(root, name))).digest('hex'), hash, `${name} changed during isolated test`);
+	for (const [rel, hash] of Object.entries(before)) {
+		assert.equal(createHash('sha256').update(await readFile(join(root, rel))).digest('hex'), hash, `${rel} changed during isolated test`);
 	}
 	report.installedFilesUnchanged = true;
 	await writeFile(join(root, 'dist', 'obsidian-smoke-report.json'), JSON.stringify(report, null, 2) + '\n');

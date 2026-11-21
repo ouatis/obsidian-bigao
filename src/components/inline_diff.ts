@@ -100,7 +100,7 @@ function renderInlineOverlay(editor: Editor): void {
 	}
 
 	const overlay = getOverlay(editor, view);
-	const fragment = document.createDocumentFragment();
+	const fragment = createFragment();
 	const ranges = buildInlineDecorationRanges(data.text, data.differences);
 	for (const range of ranges) {
 		if (range.to < view.viewport.from || range.from > view.viewport.to) continue;
@@ -128,7 +128,7 @@ function renderInlineOverlay(editor: Editor): void {
 		try {
 			const from = view.domAtPos(range.from, 1);
 			const to = view.domAtPos(range.to, -1);
-			const domRange = document.createRange();
+			const domRange = activeDocument.createRange();
 			domRange.setStart(from.node, from.offset);
 			domRange.setEnd(to.node, to.offset);
 			for (const rect of Array.from(domRange.getClientRects())) {

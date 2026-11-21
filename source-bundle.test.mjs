@@ -149,12 +149,13 @@ test('recovered source bundle registers and opens the native split commands', as
 	});
 
 	new Function(
-		'require', 'module', 'localStorage', 'document', 'app', 'console', 'window', builtBundle,
+		'require', 'module', 'localStorage', 'document', 'activeDocument', 'app', 'console', 'window', builtBundle,
 	)(
 		(id) => id === 'obsidian' ? obsidian : {},
 		module,
 		{ getItem: () => null, setItem() {} },
-		{ body: { setAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
 		app,
 		{ log() {}, error(...args) { runtimeErrors.push(args); } },
 		windowApi,
@@ -349,12 +350,13 @@ test('recovered source bundle registers and opens the native split commands', as
 	const commandsBeforeReload = commands.length;
 	const reloadedModule = { exports: {} };
 	new Function(
-		'require', 'module', 'localStorage', 'document', 'app', 'console', 'window', builtBundle,
+		'require', 'module', 'localStorage', 'document', 'activeDocument', 'app', 'console', 'window', builtBundle,
 	)(
 		(id) => id === 'obsidian' ? obsidian : {},
 		reloadedModule,
 		{ getItem: () => null, setItem() {} },
-		{ body: { setAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
 		app,
 		{ log() {}, error(...args) { runtimeErrors.push(args); } },
 		windowApi,
@@ -426,12 +428,13 @@ test('split comparisons persist across reloads and restore onto reopened panes',
 		})[key] ?? class {},
 	});
 	new Function(
-		'require', 'module', 'localStorage', 'document', 'app', 'console', 'window', builtBundle,
+		'require', 'module', 'localStorage', 'document', 'activeDocument', 'app', 'console', 'window', builtBundle,
 	)(
 		(id) => id === 'obsidian' ? obsidian : {},
 		module,
 		{ getItem: () => null, setItem() {} },
-		{ body: { setAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
+		{ body: { setAttribute() {}, removeAttribute() {} }, documentElement: { style: {} }, createElement: () => ({ style: {} }) },
 		app,
 		{ log() {}, error() {} },
 		windowApi,
@@ -455,7 +458,64 @@ test('split comparisons persist across reloads and restore onto reopened panes',
 		'persisting after restore prunes entries whose panes no longer exist',
 	);
 	workspace.getLeavesOfType = () => [];
+	let removedAttr = null;
 	await plugin.onunload();
 	assert.deepEqual(savedData, { comparisons: [] }, 'unloading with no open panes clears the persisted state');
+});
+
+test('applyPalette sets data-bigao-palette and onunload clears it from the body', async () => {
+	const module = { exports: {} };
+	const attrs = new Map();
+	const docStub = {
+		body: {
+			setAttribute(k, v) { attrs.set(k, v); },
+			removeAttribute(k) { attrs.delete(k); },
+		},
+		documentElement: { style: {} },
+		createElement: () => ({ style: {} }),
+	};
+	const windowApi = {
+		setTimeout: () => 1,
+		clearTimeout() {},
+		setInterval: () => 2,
+		clearInterval() {},
+	};
+	class PalettePluginStub {
+		constructor(runtimeApp) { this.app = runtimeApp; }
+		addCommand() {}
+		addRibbonIcon() { return { addClass() {}, setAttribute() {} }; }
+		registerView() {}
+		registerEditorExtension() {}
+		registerEvent() {}
+		register() {}
+		async loadData() { return null; }
+		async saveData() {}
+	}
+	const app = {
+		loadLocalStorage: (k) => k === 'bigao-palette' ? 'ocean' : null,
+		saveLocalStorage() {},
+		workspace: { on() { return {}; }, onLayoutReady() {}, getLeavesOfType: () => [], detachLeavesOfType() {} },
+		vault: { on() { return {}; }, getMarkdownFiles: () => [] },
+	};
+	const obsidian = new Proxy({}, {
+		get: (_target, key) => ({ Plugin: PalettePluginStub, addIcon: () => {} })[key] ?? class {},
+	});
+	new Function(
+		'require', 'module', 'localStorage', 'document', 'activeDocument', 'app', 'console', 'window', builtBundle,
+	)(
+		(id) => id === 'obsidian' ? obsidian : {},
+		module,
+		{ getItem: () => null, setItem() {} },
+		docStub,
+		docStub,
+		app,
+		{ log() {}, error() {} },
+		windowApi,
+	);
+	const plugin = new module.exports.default(app);
+	plugin.onload();
+	assert.equal(attrs.get('data-bigao-palette'), 'ocean');
+	await plugin.onunload();
+	assert.equal(attrs.has('data-bigao-palette'), false, 'onunload must remove data-bigao-palette');
 });
 

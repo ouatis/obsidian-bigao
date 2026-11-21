@@ -84,7 +84,10 @@ const LANGUAGE_OVERRIDE_KEY = 'bigao-language';
 /** The Obsidian interface language, detected through moment's locale. */
 function interfaceLanguage(): Language {
 	try {
-		const moment = (globalThis as unknown as { moment?: { locale(): string } }).moment;
+		const host = (typeof window !== 'undefined' ? window : Object) as unknown as {
+			moment?: { locale(): string };
+		};
+		const moment = host.moment;
 		if (!moment) return 'zh-CN';
 		return moment.locale().toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
 	} catch {
