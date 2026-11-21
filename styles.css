@@ -181,12 +181,9 @@ body[data-bigao-palette="forest"] {
 	gap: 0.25rem; /* 4px */
 }
 
-.no-decoration {
-	text-decoration-line: none;
-}
-
+.no-decoration,
 .no-decoration:hover {
-	text-decoration-line: none;
+	text-decoration: none;
 }
 
 .text-xxs {
